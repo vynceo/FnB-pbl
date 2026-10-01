@@ -61,7 +61,7 @@ class OrderController extends Controller
                 'tax_amount' => $taxAmount,
                 'total_amount' => $totalAmount,
                 'payment_method' => $validated['payment_method'],
-                'payment_status' => $validated['payment_method'] === 'cod' ? 'pending' : 'pending',
+                'payment_status' => 'pending',
                 'order_status' => 'received',
                 'payment_reference' => 'REF-' . strtoupper(Str::random(10)),
                 'snap_token' => 'SNAP-' . Str::uuid(),
@@ -123,6 +123,10 @@ class OrderController extends Controller
      */
     public function simulateStatus(Request $request, string $orderNumber)
     {
+        $request->validate([
+            'order_status' => ['required', 'in:received,cooking,ready,delivered,cancelled'],
+        ]);
+
         $order = Order::where('order_number', $orderNumber)->firstOrFail();
         $nextStatus = $request->input('order_status', 'ready');
 
