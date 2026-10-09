@@ -21,7 +21,6 @@ sealed class BottomNavItem(
     object Home : BottomNavItem("home", "Beranda", Icons.Filled.Home, Icons.Outlined.Home)
     object Menu : BottomNavItem("menu", "Menu", Icons.Filled.Restaurant, Icons.Outlined.Restaurant)
     object Cart : BottomNavItem("cart", "Keranjang", Icons.Filled.ShoppingCart, Icons.Outlined.ShoppingCart)
-    object Orders : BottomNavItem("my_orders", "Pesanan", Icons.Filled.Receipt, Icons.Outlined.Receipt)
     object Profile : BottomNavItem("profile", "Profil", Icons.Filled.Person, Icons.Outlined.Person)
 }
 
@@ -35,19 +34,18 @@ fun BottomNavBar(
         BottomNavItem.Home,
         BottomNavItem.Menu,
         BottomNavItem.Cart,
-        BottomNavItem.Orders,
         BottomNavItem.Profile
     )
 
     NavigationBar(
         containerColor = SurfaceWhite,
-        contentColor = PrimaryBrown,
+        contentColor = Amber,
         tonalElevation = 8.dp
     ) {
         items.forEach { item ->
             val selected = currentRoute == item.route
             val iconColor by animateColorAsState(
-                targetValue = if (selected) PrimaryBrown else TextTertiary,
+                targetValue = if (selected) Amber else TextTertiary,
                 label = "iconColor"
             )
             NavigationBarItem(
@@ -90,7 +88,7 @@ fun BottomNavBar(
                     )
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    indicatorColor = PrimaryBrown.copy(alpha = 0.12f)
+                    indicatorColor = Amber.copy(alpha = 0.12f)
                 )
             )
         }

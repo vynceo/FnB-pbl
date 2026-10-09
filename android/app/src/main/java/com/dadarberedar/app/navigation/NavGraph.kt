@@ -17,11 +17,11 @@ import com.dadarberedar.app.ui.auth.RegisterScreen
 import com.dadarberedar.app.ui.cart.CartScreen
 import com.dadarberedar.app.ui.cart.CheckoutScreen
 import com.dadarberedar.app.ui.components.BottomNavBar
-import com.dadarberedar.app.ui.components.BottomNavItem
 import com.dadarberedar.app.ui.home.HomeScreen
 import com.dadarberedar.app.ui.menu.MenuScreen
 import com.dadarberedar.app.ui.orders.MyOrdersScreen
 import com.dadarberedar.app.ui.outlet.OutletDetailScreen
+import com.dadarberedar.app.ui.product.ProductDetailScreen
 import com.dadarberedar.app.ui.profile.ProfileScreen
 import com.dadarberedar.app.ui.search.SearchScreen
 import com.dadarberedar.app.ui.splash.SplashScreen
@@ -36,6 +36,9 @@ sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Register : Screen("register")
     object Search : Screen("search")
+    object ProductDetail : Screen("product/{productId}") {
+        fun createRoute(productId: Long) = "product/$productId"
+    }
     object OutletDetail : Screen("outlet/{outletId}") {
         fun createRoute(outletId: Long) = "outlet/$outletId"
     }
@@ -52,7 +55,6 @@ private val bottomNavRoutes = listOf(
     Screen.Home.route,
     Screen.Menu.route,
     Screen.Cart.route,
-    Screen.MyOrders.route,
     Screen.Profile.route
 )
 
@@ -109,6 +111,16 @@ fun MainApp() {
                     onOutletClick = { outletId ->
                         navController.navigate(Screen.OutletDetail.createRoute(outletId))
                     },
+                    onProductClick = { productId ->
+                        navController.navigate(Screen.ProductDetail.createRoute(productId))
+                    },
+                    onCategoryClick = {
+                        navController.navigate(Screen.Menu.route) {
+                            popUpTo(Screen.Home.route) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
                     onMenuClick = {
                         navController.navigate(Screen.Menu.route) {
                             popUpTo(Screen.Home.route) { saveState = true }
@@ -116,13 +128,35 @@ fun MainApp() {
                             restoreState = true
                         }
                     },
-                    onSearchClick = { navController.navigate(Screen.Search.route) }
+                    onSearchClick = { navController.navigate(Screen.Search.route) },
+                    onCartClick = {
+                        navController.navigate(Screen.Cart.route) {
+                            popUpTo(Screen.Home.route)
+                        }
+                    }
                 )
             }
 
             composable(Screen.Menu.route) {
                 MenuScreen(
-                    onSearchClick = { navController.navigate(Screen.Search.route) }
+                    onSearchClick = { navController.navigate(Screen.Search.route) },
+                    onProductClick = { productId ->
+                        navController.navigate(Screen.ProductDetail.createRoute(productId))
+                    }
+                )
+            }
+
+            composable(
+                route = Screen.ProductDetail.route,
+                arguments = listOf(navArgument("productId") { type = NavType.LongType })
+            ) {
+                ProductDetailScreen(
+                    onBack = { navController.popBackStack() },
+                    onCartClick = {
+                        navController.navigate(Screen.Cart.route) {
+                            popUpTo(Screen.Home.route)
+                        }
+                    }
                 )
             }
 
@@ -209,7 +243,10 @@ fun MainApp() {
             composable(Screen.Profile.route) {
                 ProfileScreen(
                     onLoginClick = { navController.navigate(Screen.Login.route) },
-                    onRegisterClick = { navController.navigate(Screen.Register.route) }
+                    onRegisterClick = { navController.navigate(Screen.Register.route) },
+                    onOrdersClick = {
+                        navController.navigate(Screen.MyOrders.route)
+                    }
                 )
             }
         }

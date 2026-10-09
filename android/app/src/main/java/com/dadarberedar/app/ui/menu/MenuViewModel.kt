@@ -14,7 +14,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MenuViewModel @Inject constructor(
-    private val apiService: ApiService
+    private val apiService: ApiService,
+    private val selectionBus: MenuSelectionBus
 ) : ViewModel() {
 
     private val _categories = MutableStateFlow<List<Category>>(emptyList())
@@ -26,12 +27,21 @@ class MenuViewModel @Inject constructor(
     private val _selectedCategory = MutableStateFlow<Long?>(null)
     val selectedCategory: StateFlow<Long?> = _selectedCategory.asStateFlow()
 
+    private val _query = MutableStateFlow("")
+    val query: StateFlow<String> = _query.asStateFlow()
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     private var allProducts = listOf<Product>()
 
     init {
+        viewModelScope.launch {
+            selectionBus.categoryId.collect { id ->
+                _selectedCategory.value = id
+                applyFilter()
+            }
+        }
         loadData()
     }
 
@@ -46,7 +56,7 @@ class MenuViewModel @Inject constructor(
                 val prodRes = apiService.getProducts()
                 if (prodRes.isSuccessful) {
                     allProducts = prodRes.body()?.products ?: emptyList()
-                    _products.value = allProducts
+                    applyFilter()
                 }
             } catch (_: Exception) {
             } finally {
@@ -57,10 +67,22 @@ class MenuViewModel @Inject constructor(
 
     fun selectCategory(categoryId: Long?) {
         _selectedCategory.value = categoryId
-        _products.value = if (categoryId != null) {
-            allProducts.filter { it.categoryId == categoryId }
-        } else {
-            allProducts
-        }
+        selectionBus.select(categoryId)
+        applyFilter()
+    }
+
+    fun onQueryChange(value: String) {
+        _query.value = value
+        applyFilter()
+    }
+
+    private fun applyFilter() {
+        val categoryId = _selectedCategory.value
+        val q = _query.value.trim()
+        _products.value = allProducts
+            .asSequence()
+            .filter { categoryId == null || it.categoryId == categoryId }
+            .filter { q.isBlank() || it.name.contains(q, ignoreCase = true) || it.description?.contains(q, true) == true }
+            .toList()
     }
 }

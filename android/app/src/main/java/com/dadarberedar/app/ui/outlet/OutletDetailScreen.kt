@@ -54,29 +54,29 @@ fun OutletDetailScreen(
                 title = { Text(outlet?.name ?: "Detail Outlet", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Kembali", tint = White)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Kembali", tint = TextPrimary)
                     }
                 },
                 actions = {
                     BadgedBox(
                         badge = {
                             if (cartCount > 0) {
-                                Badge(containerColor = AccentGold) {
-                                    Text("$cartCount", color = White)
+                                Badge(containerColor = AccentOrange) {
+                                    Text("$cartCount", color = White, fontSize = 10.sp)
                                 }
                             }
                         }
                     ) {
                         IconButton(onClick = onCartClick) {
-                            Icon(Icons.Default.ShoppingCart, contentDescription = "Keranjang", tint = White)
+                            Icon(Icons.Default.ShoppingCart, contentDescription = "Keranjang", tint = TextPrimary)
                         }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = PrimaryBrown,
-                    titleContentColor = White,
-                    navigationIconContentColor = White,
-                    actionIconContentColor = White
+                    containerColor = SurfaceWhite,
+                    titleContentColor = TextPrimary,
+                    navigationIconContentColor = TextPrimary,
+                    actionIconContentColor = TextPrimary
                 )
             )
         }
@@ -88,7 +88,7 @@ fun OutletDetailScreen(
                     .padding(paddingVals),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = PrimaryBrown)
+                CircularProgressIndicator(color = Amber)
             }
         } else {
             LazyColumn(
@@ -129,7 +129,7 @@ fun OutletDetailScreen(
 
                                 // Hours
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.AccessTime, contentDescription = null, tint = PrimaryBrown, modifier = Modifier.size(16.dp))
+                                    Icon(Icons.Default.AccessTime, contentDescription = null, tint = Amber, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(o.openingHours, fontSize = 13.sp)
                                 }
@@ -137,7 +137,7 @@ fun OutletDetailScreen(
 
                                 // Address
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.LocationOn, contentDescription = null, tint = PrimaryBrown, modifier = Modifier.size(16.dp))
+                                    Icon(Icons.Default.LocationOn, contentDescription = null, tint = Amber, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text("${o.address}, ${o.city}", fontSize = 13.sp)
                                 }
@@ -151,9 +151,9 @@ fun OutletDetailScreen(
                                             context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${o.phone}")))
                                         }
                                     ) {
-                                        Icon(Icons.Default.Phone, contentDescription = null, tint = PrimaryBrown, modifier = Modifier.size(16.dp))
+                                        Icon(Icons.Default.Phone, contentDescription = null, tint = Amber, modifier = Modifier.size(16.dp))
                                         Spacer(modifier = Modifier.width(6.dp))
-                                        Text(o.phone, fontSize = 13.sp, color = PrimaryBrown)
+                                        Text(o.phone, fontSize = 13.sp, color = Amber)
                                     }
                                 }
 
@@ -169,7 +169,7 @@ fun OutletDetailScreen(
                                     ) {
                                         Text("💬", fontSize = 16.sp)
                                         Spacer(modifier = Modifier.width(6.dp))
-                                        Text("Chat WhatsApp", fontSize = 13.sp, color = PrimaryBrown)
+                                        Text("Chat WhatsApp", fontSize = 13.sp, color = Amber)
                                     }
                                 }
 
@@ -205,9 +205,9 @@ fun OutletDetailScreen(
                                             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                                         }
                                     ) {
-                                        Icon(Icons.Default.Map, contentDescription = null, tint = PrimaryBrown, modifier = Modifier.size(16.dp))
+                                        Icon(Icons.Default.Map, contentDescription = null, tint = Amber, modifier = Modifier.size(16.dp))
                                         Spacer(modifier = Modifier.width(6.dp))
-                                        Text("Buka di Google Maps", fontSize = 13.sp, color = PrimaryBrown)
+                                        Text("Buka di Google Maps", fontSize = 13.sp, color = Amber)
                                     }
                                 }
                             }
@@ -229,7 +229,7 @@ fun OutletDetailScreen(
                                     onClick = { viewModel.filterByCategory(null) },
                                     label = { Text("Semua") },
                                     colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = PrimaryBrown,
+                                        selectedContainerColor = Amber,
                                         selectedLabelColor = White
                                     )
                                 )
@@ -242,7 +242,7 @@ fun OutletDetailScreen(
                                     onClick = { viewModel.filterByCategory(catId) },
                                     label = { Text(catName) },
                                     colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = PrimaryBrown,
+                                        selectedContainerColor = Amber,
                                         selectedLabelColor = White
                                     )
                                 )
@@ -322,14 +322,14 @@ fun ReviewCard(review: Review) {
                     Surface(
                         modifier = Modifier.size(32.dp),
                         shape = CircleShape,
-                        color = PrimaryBrown.copy(alpha = 0.15f)
+                        color = Amber.copy(alpha = 0.15f)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
                                 text = review.authorName.take(1).uppercase(),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp,
-                                color = PrimaryBrown
+                                color = Amber
                             )
                         }
                     }
@@ -337,7 +337,7 @@ fun ReviewCard(review: Review) {
                     Column {
                         Text(review.authorName, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                         if (review.verifiedBuyer) {
-                            Text("Pembeli Terverifikasi", fontSize = 10.sp, color = PrimaryBrown)
+                            Text("Pembeli Terverifikasi", fontSize = 10.sp, color = Amber)
                         }
                     }
                 }
@@ -386,7 +386,7 @@ fun OutletCard2(outlet: Outlet, onClick: () -> Unit) {
                 Text(outlet.name, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                 Spacer(modifier = Modifier.height(2.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.LocationOn, contentDescription = null, tint = PrimaryBrownLight, modifier = Modifier.size(12.dp))
+                    Icon(Icons.Default.LocationOn, contentDescription = null, tint = AmberLight, modifier = Modifier.size(12.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         "${outlet.address}, ${outlet.city}",

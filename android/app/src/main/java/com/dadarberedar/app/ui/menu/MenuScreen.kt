@@ -1,12 +1,11 @@
 package com.dadarberedar.app.ui.menu
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -22,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.dadarberedar.app.data.model.Category
 import com.dadarberedar.app.data.model.Product
 import com.dadarberedar.app.data.model.resolvedImageUrl
 import com.dadarberedar.app.ui.cart.CartViewModel
@@ -32,12 +30,14 @@ import com.dadarberedar.app.ui.theme.*
 @Composable
 fun MenuScreen(
     onSearchClick: () -> Unit,
+    onProductClick: (Long) -> Unit,
     cartViewModel: CartViewModel = hiltViewModel(),
     viewModel: MenuViewModel = hiltViewModel()
 ) {
     val categories by viewModel.categories.collectAsState()
     val products by viewModel.products.collectAsState()
     val selectedCategory by viewModel.selectedCategory.collectAsState()
+    val query by viewModel.query.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val cartCount = cartViewModel.cartItems.sumOf { it.quantity }
 
@@ -45,28 +45,24 @@ fun MenuScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Menu", fontWeight = FontWeight.Bold)
+                    Text("Menu", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = TextPrimary)
                 },
                 actions = {
                     BadgedBox(
                         badge = {
                             if (cartCount > 0) {
-                                Badge(containerColor = AccentGold) {
-                                    Text("$cartCount", color = White)
+                                Badge(containerColor = AccentOrange) {
+                                    Text("$cartCount", color = White, fontSize = 10.sp)
                                 }
                             }
                         }
                     ) {
                         IconButton(onClick = onSearchClick) {
-                            Icon(Icons.Default.Search, contentDescription = "Cari", tint = White)
+                            Icon(Icons.Default.Search, contentDescription = "Cari", tint = TextPrimary)
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = PrimaryBrown,
-                    titleContentColor = White,
-                    actionIconContentColor = White
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceWhite)
             )
         }
     ) { paddingVals ->
@@ -76,42 +72,78 @@ fun MenuScreen(
                 .padding(paddingVals)
                 .background(BackgroundCream)
         ) {
-            // Category chips
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                item {
-                    FilterChip(
-                        selected = selectedCategory == null,
-                        onClick = { viewModel.selectCategory(null) },
-                        label = { Text("Semua") },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = PrimaryBrown,
-                            selectedLabelColor = White
-                        )
-                    )
-                }
-                items(categories) { category ->
-                    val icon = when (category.type) {
-                        "food" -> Icons.Default.Restaurant
-                        "beverage" -> Icons.Default.LocalCafe
-                        "side" -> Icons.Default.LunchDining
-                        else -> Icons.Default.Fastfood
-                    }
-                    FilterChip(
-                        selected = selectedCategory == category.id,
-                        onClick = { viewModel.selectCategory(category.id) },
-                        label = { Text(category.name, maxLines = 1) },
-                        leadingIcon = {
-                            Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp))
+            Surface(color = SurfaceWhite) {
+                Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp)) {
+                    OutlinedTextField(
+                        value = query,
+                        onValueChange = { viewModel.onQueryChange(it) },
+                        placeholder = { Text("Cari menu...", fontSize = 14.sp) },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TextSecondary) },
+                        trailingIcon = {
+                            if (query.isNotEmpty()) {
+                                IconButton(onClick = { viewModel.onQueryChange("") }) {
+                                    Icon(Icons.Default.Close, contentDescription = "Bersihkan", tint = TextSecondary)
+                                }
+                            }
                         },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = PrimaryBrown,
-                            selectedLabelColor = White,
-                            selectedLeadingIconColor = White
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Amber,
+                            unfocusedBorderColor = DividerColor
                         )
                     )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    var dropdownExpanded by remember { mutableStateOf(false) }
+                    val selectedName = categories.find { it.id == selectedCategory }?.name ?: "Semua Kategori"
+
+                    ExposedDropdownMenuBox(
+                        expanded = dropdownExpanded,
+                        onExpandedChange = { dropdownExpanded = it }
+                    ) {
+                        OutlinedTextField(
+                            value = selectedName,
+                            onValueChange = {},
+                            readOnly = true,
+                            leadingIcon = { Icon(Icons.Default.FilterList, contentDescription = null, tint = BurntAmber) },
+                            trailingIcon = {
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = TextSecondary)
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Amber,
+                                unfocusedBorderColor = DividerColor
+                            )
+                        )
+                        ExposedDropdownMenu(
+                            expanded = dropdownExpanded,
+                            onDismissRequest = { dropdownExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Semua Kategori") },
+                                onClick = {
+                                    viewModel.selectCategory(null)
+                                    dropdownExpanded = false
+                                },
+                                leadingIcon = { Icon(Icons.Default.Apps, contentDescription = null) }
+                            )
+                            categories.forEach { category ->
+                                DropdownMenuItem(
+                                    text = { Text(category.name) },
+                                    onClick = {
+                                        viewModel.selectCategory(category.id)
+                                        dropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
@@ -120,16 +152,33 @@ fun MenuScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = PrimaryBrown)
+                    CircularProgressIndicator(color = Amber)
+                }
+            } else if (products.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            Icons.Default.SearchOff,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            tint = TextTertiary
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Menu tidak ditemukan", fontSize = 14.sp, color = TextSecondary)
+                    }
                 }
             } else {
                 LazyColumn(
-                    contentPadding = PaddingValues(bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                    contentPadding = PaddingValues(vertical = 12.dp, horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(products) { product ->
                         MenuProductCard(
                             product = product,
+                            onClick = { onProductClick(product.id) },
                             onAddToCart = { cartViewModel.addToCart(product, 1L) }
                         )
                     }
@@ -140,17 +189,17 @@ fun MenuScreen(
 }
 
 @Composable
-fun MenuProductCard(product: Product, onAddToCart: () -> Unit) {
+fun MenuProductCard(product: Product, onClick: () -> Unit = {}, onAddToCart: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        shape = RoundedCornerShape(12.dp),
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
@@ -158,8 +207,8 @@ fun MenuProductCard(product: Product, onAddToCart: () -> Unit) {
                 contentDescription = product.name,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .size(88.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .size(84.dp)
+                    .clip(RoundedCornerShape(12.dp))
                     .background(GrayLight)
             )
             Spacer(modifier = Modifier.width(12.dp))
@@ -176,7 +225,7 @@ fun MenuProductCard(product: Product, onAddToCart: () -> Unit) {
                     if (product.isSignature) {
                         Spacer(modifier = Modifier.width(6.dp))
                         Surface(
-                            color = AccentGold,
+                            color = AccentOrange,
                             shape = RoundedCornerShape(4.dp)
                         ) {
                             Text(
@@ -189,53 +238,15 @@ fun MenuProductCard(product: Product, onAddToCart: () -> Unit) {
                         }
                     }
                 }
-                if (product.description.isNullOrBlank().not()) {
+                if (!product.description.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         product.description ?: "",
                         fontSize = 12.sp,
                         color = TextSecondary,
-                        maxLines = 2,
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (product.isBestseller) {
-                        Surface(
-                            color = AccentGold.copy(alpha = 0.15f),
-                            shape = RoundedCornerShape(4.dp)
-                        ) {
-                            Text(
-                                "Bestseller",
-                                fontSize = 10.sp,
-                                color = AccentOrange,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(6.dp))
-                    }
-                    if (product.isCrispy) {
-                        Surface(
-                            color = PrimaryBrownLight.copy(alpha = 0.15f),
-                            shape = RoundedCornerShape(4.dp)
-                        ) {
-                            Text(
-                                "Krispy",
-                                fontSize = 10.sp,
-                                color = PrimaryBrown,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(6.dp))
-                    }
-                    if (product.spicinessLevel > 0) {
-                        repeat(product.spicinessLevel) {
-                            Text("🌶", fontSize = 10.sp)
-                        }
-                    }
                 }
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(
@@ -246,27 +257,22 @@ fun MenuProductCard(product: Product, onAddToCart: () -> Unit) {
                     Text(
                         "Rp ${String.format("%,.0f", product.price)}",
                         fontWeight = FontWeight.Bold,
-                        color = PrimaryBrown,
+                        color = AccentOrange,
                         fontSize = 15.sp
                     )
                     Surface(
                         onClick = onAddToCart,
-                        shape = RoundedCornerShape(8.dp),
-                        color = PrimaryBrown
+                        shape = CircleShape,
+                        color = Amber
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Default.Add,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = White
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Tambah", fontSize = 12.sp, color = White, fontWeight = FontWeight.Medium)
-                        }
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "Tambah",
+                            modifier = Modifier
+                                .size(32.dp)
+                                .padding(7.dp),
+                            tint = White
+                        )
                     }
                 }
             }

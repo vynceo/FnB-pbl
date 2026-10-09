@@ -180,6 +180,99 @@ class OrderController extends Controller
     }
 
     /**
+     * PUT /api/orders/{orderNumber}
+     * Edit delivery/contact details while the order is still `received`.
+     */
+    public function update(Request $request, string $orderNumber)
+    {
+        $validator = Validator::make($request->all(), [
+            'customer_name' => ['sometimes', 'string', 'max:100'],
+            'customer_phone' => ['sometimes', 'string', 'max:25'],
+            'customer_email' => ['sometimes', 'nullable', 'email', 'max:100'],
+            'delivery_address' => ['sometimes', 'nullable', 'string', 'max:500'],
+            'delivery_notes' => ['sometimes', 'nullable', 'string', 'max:500'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $order = Order::where('order_number', $orderNumber)->firstOrFail();
+
+        if (!$this->canManage($request, $order)) {
+            return response()->json(['message' => 'Anda tidak punya akses ke pesanan ini.'], 403);
+        }
+
+        if ($order->order_status !== 'received') {
+            return response()->json([
+                'message' => 'Pesanan sudah diproses dan tidak dapat diubah lagi.',
+            ], 422);
+        }
+
+        $order->update($validator->validated());
+        $order->load(['outlet', 'items.product']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pesanan berhasil diperbarui',
+            'order' => $order,
+        ]);
+    }
+
+    /**
+     * POST /api/orders/{orderNumber}/cancel
+     */
+    public function cancel(Request $request, string $orderNumber)
+    {
+        $order = Order::where('order_number', $orderNumber)->firstOrFail();
+
+        if (!$this->canManage($request, $order)) {
+            return response()->json(['message' => 'Anda tidak punya akses ke pesanan ini.'], 403);
+        }
+
+        if ($order->order_status === 'cancelled') {
+            return response()->json([
+                'success' => true,
+                'message' => 'Pesanan sudah dibatalkan.',
+                'order' => $order,
+            ]);
+        }
+
+        if ($order->order_status !== 'received') {
+            return response()->json([
+                'message' => 'Pesanan sudah diproses dan tidak dapat dibatalkan.',
+            ], 422);
+        }
+
+        $order->update(['order_status' => 'cancelled']);
+        $order->load(['outlet', 'items.product']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pesanan dibatalkan',
+            'order' => $order,
+        ]);
+    }
+
+    /**
+     * Guest orders (user_id = null) are tracked by order number alone;
+     * logged-in orders may only be managed by their owner.
+     */
+    protected function canManage(Request $request, Order $order): bool
+    {
+        if ($order->user_id === null) {
+            return true;
+        }
+
+        $user = $request->user('sanctum');
+
+        return $user !== null && (int) $order->user_id === (int) $user->id;
+    }
+
+    /**
      * POST /api/orders/{orderNumber}/simulate-status
      */
     public function simulateStatus(Request $request, string $orderNumber)

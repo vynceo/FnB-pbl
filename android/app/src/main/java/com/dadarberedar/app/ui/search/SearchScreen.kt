@@ -100,7 +100,7 @@ fun SearchScreen(
                         placeholder = { Text("Cari menu atau outlet...", color = TextTertiary) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = PrimaryBrownLight) },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = AmberLight) },
                         trailingIcon = {
                             if (query.isNotEmpty()) {
                                 IconButton(onClick = { viewModel.onQueryChange("") }) {
@@ -110,7 +110,7 @@ fun SearchScreen(
                         },
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = PrimaryBrown,
+                            focusedBorderColor = Amber,
                             unfocusedBorderColor = DividerColor
                         )
                     )
@@ -138,14 +138,14 @@ fun SearchScreen(
                     Surface(
                         modifier = Modifier.size(80.dp),
                         shape = RoundedCornerShape(24.dp),
-                        color = PrimaryBrown.copy(alpha = 0.08f)
+                        color = Amber.copy(alpha = 0.08f)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 Icons.Default.Search,
                                 contentDescription = null,
                                 modifier = Modifier.size(40.dp),
-                                tint = PrimaryBrownLight
+                                tint = AmberLight
                             )
                         }
                     }
@@ -161,7 +161,7 @@ fun SearchScreen(
                     .background(BackgroundCream),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = PrimaryBrown)
+                CircularProgressIndicator(color = Amber)
             }
         } else if (products.isEmpty() && outlets.isEmpty()) {
             Box(

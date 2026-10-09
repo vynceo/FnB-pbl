@@ -69,6 +69,19 @@ interface ApiService {
     @GET("api/orders/{orderNumber}")
     suspend fun getOrderTracking(@Path("orderNumber") orderNumber: String): Response<OrderTrackingResponse>
 
+    @PUT("api/orders/{orderNumber}")
+    suspend fun updateOrder(
+        @Path("orderNumber") orderNumber: String,
+        @Header("Authorization") token: String?,
+        @Body request: OrderUpdateRequest
+    ): Response<OrderActionResponse>
+
+    @POST("api/orders/{orderNumber}/cancel")
+    suspend fun cancelOrder(
+        @Path("orderNumber") orderNumber: String,
+        @Header("Authorization") token: String?
+    ): Response<OrderActionResponse>
+
     @POST("api/orders/{orderNumber}/simulate-payment")
     suspend fun simulatePayment(@Path("orderNumber") orderNumber: String): Response<OrderActionResponse>
 

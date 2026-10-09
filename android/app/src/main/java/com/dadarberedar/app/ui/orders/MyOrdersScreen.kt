@@ -40,13 +40,13 @@ fun MyOrdersScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Kembali", tint = White)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Kembali", tint = TextPrimary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = PrimaryBrown,
-                    titleContentColor = White,
-                    navigationIconContentColor = White
+                    containerColor = SurfaceWhite,
+                    titleContentColor = TextPrimary,
+                    navigationIconContentColor = TextPrimary
                 )
             )
         }
@@ -59,7 +59,7 @@ fun MyOrdersScreen(
                     .background(BackgroundCream),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = PrimaryBrown)
+                CircularProgressIndicator(color = Amber)
             }
         } else if (!isLoggedIn) {
             Box(
@@ -73,14 +73,14 @@ fun MyOrdersScreen(
                     Surface(
                         modifier = Modifier.size(80.dp),
                         shape = RoundedCornerShape(24.dp),
-                        color = PrimaryBrown.copy(alpha = 0.08f)
+                        color = Amber.copy(alpha = 0.08f)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 Icons.Default.Lock,
                                 contentDescription = null,
                                 modifier = Modifier.size(40.dp),
-                                tint = PrimaryBrownLight
+                                tint = AmberLight
                             )
                         }
                     }
@@ -102,14 +102,14 @@ fun MyOrdersScreen(
                     Surface(
                         modifier = Modifier.size(80.dp),
                         shape = RoundedCornerShape(24.dp),
-                        color = PrimaryBrown.copy(alpha = 0.08f)
+                        color = Amber.copy(alpha = 0.08f)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 Icons.Default.Receipt,
                                 contentDescription = null,
                                 modifier = Modifier.size(40.dp),
-                                tint = PrimaryBrownLight
+                                tint = AmberLight
                             )
                         }
                     }
@@ -151,7 +151,7 @@ fun MyOrdersScreen(
 @Composable
 fun OrderCard(order: Order, onClick: () -> Unit) {
     val (statusColor, statusLabel) = when (order.orderStatus) {
-        "received" -> PrimaryBrown to "Diterima"
+        "received" -> Amber to "Diterima"
         "cooking" -> AccentGold to "Sedang Dimasak"
         "ready" -> SuccessGreen to "Siap Diambil"
         "delivered" -> SuccessGreen to "Selesai"
@@ -207,7 +207,7 @@ fun OrderCard(order: Order, onClick: () -> Unit) {
                     "Rp ${String.format("%,.0f", order.totalAmount)}",
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
-                    color = PrimaryBrown
+                    color = Amber
                 )
             }
             order.createdAt?.let {

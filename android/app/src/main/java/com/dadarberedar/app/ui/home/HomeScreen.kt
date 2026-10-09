@@ -1,5 +1,6 @@
 package com.dadarberedar.app.ui.home
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,13 +17,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.dadarberedar.app.R
 import com.dadarberedar.app.data.model.Category
 import com.dadarberedar.app.data.model.Outlet
 import com.dadarberedar.app.data.model.Product
@@ -34,8 +38,11 @@ import com.dadarberedar.app.ui.theme.*
 @Composable
 fun HomeScreen(
     onOutletClick: (Long) -> Unit,
+    onProductClick: (Long) -> Unit,
+    onCategoryClick: () -> Unit,
     onMenuClick: () -> Unit,
     onSearchClick: () -> Unit,
+    onCartClick: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
     cartViewModel: CartViewModel = hiltViewModel()
 ) {
@@ -44,33 +51,54 @@ fun HomeScreen(
     val bestsellers by viewModel.bestsellers.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val cartCount = cartViewModel.cartItems.sumOf { it.quantity }
 
     Scaffold(
         topBar = {
             TopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = onMenuClick) {
+                        Icon(Icons.Default.Menu, contentDescription = "Menu", tint = TextPrimary)
+                    }
+                },
                 title = {
                     Column {
                         Text(
                             "Dadar Beredar",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
-                            color = White
+                            fontSize = 17.sp,
+                            color = TextPrimary
                         )
                         Text(
-                            "Telur Dadar Krispy, Sambal Rempah",
+                            "Nasi & Lauk Panas",
                             fontSize = 11.sp,
-                            color = White.copy(alpha = 0.7f)
+                            color = TextSecondary
                         )
                     }
                 },
                 actions = {
                     IconButton(onClick = onSearchClick) {
-                        Icon(Icons.Default.Search, contentDescription = "Cari", tint = White)
+                        Icon(Icons.Default.Search, contentDescription = "Cari", tint = TextPrimary)
+                    }
+                    BadgedBox(
+                        badge = {
+                            if (cartCount > 0) {
+                                Badge(containerColor = AccentOrange) {
+                                    Text("$cartCount", color = White, fontSize = 10.sp)
+                                }
+                            }
+                        }
+                    ) {
+                        IconButton(onClick = onCartClick) {
+                            Icon(
+                                Icons.Default.ShoppingCart,
+                                contentDescription = "Keranjang",
+                                tint = TextPrimary
+                            )
+                        }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = PrimaryBrownDark
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceWhite)
             )
         }
     ) { paddingVals ->
@@ -81,7 +109,7 @@ fun HomeScreen(
                     .padding(paddingVals),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = PrimaryBrown)
+                CircularProgressIndicator(color = Amber)
             }
         } else {
             LazyColumn(
@@ -91,62 +119,58 @@ fun HomeScreen(
                     .background(BackgroundCream),
                 contentPadding = PaddingValues(bottom = 24.dp)
             ) {
-                // Hero Banner
-                item {
-                    HeroBanner()
-                }
+                item { HeroBanner(onPesanClick = onMenuClick) }
 
-                // Promo Card
-                item {
-                    PromoCard()
-                }
-
-                // Quick Categories
                 if (categories.isNotEmpty()) {
                     item {
-                        SectionHeader(
-                            title = "Kategori",
-                            subtitle = "Lihat Semua",
-                            onSeeAll = onMenuClick
-                        )
+                        SectionHeader(title = "Kategori", subtitle = "Lihat Semua", onSeeAll = onMenuClick)
                     }
                     item {
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 16.dp),
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            items(categories.take(8)) { category ->
-                                CategoryItem(category) { onMenuClick() }
-                            }
-                        }
-                    }
-                }
-
-                // Bestsellers
-                if (bestsellers.isNotEmpty()) {
-                    item {
-                        SectionHeader(title = "Bestseller", subtitle = null)
-                    }
-                    item {
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(bestsellers) { product ->
-                                BestsellerCard(
-                                    product = product,
-                                    onAddToCart = { cartViewModel.addToCart(product, outlets.firstOrNull()?.id ?: 1L) }
+                            categories.take(4).forEach { category ->
+                                CategoryTile(
+                                    category = category,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = {
+                                        viewModel.selectCategory(category.id)
+                                        onCategoryClick()
+                                    }
                                 )
                             }
                         }
                     }
                 }
 
-                // Outlets
-                if (outlets.isNotEmpty()) {
+                if (bestsellers.isNotEmpty()) {
+                    item { SectionHeader(title = "Menu Favorit", subtitle = "Lihat Semua", onSeeAll = onMenuClick) }
                     item {
-                        SectionHeader(title = "Outlet Terdekat", subtitle = null)
+                        Column(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            bestsellers.take(5).forEach { product ->
+                                FavoriteMenuRow(
+                                    product = product,
+                                    onClick = { onProductClick(product.id) },
+                                    onAddToCart = {
+                                        cartViewModel.addToCart(
+                                            product,
+                                            outlets.firstOrNull()?.id ?: 1L
+                                        )
+                                    }
+                                )
+                            }
+                        }
                     }
+                }
+
+                if (outlets.isNotEmpty()) {
+                    item { SectionHeader(title = "Outlet Terdekat", subtitle = null) }
                     item {
                         LazyRow(
                             contentPadding = PaddingValues(horizontal = 16.dp),
@@ -159,7 +183,6 @@ fun HomeScreen(
                     }
                 }
 
-                // Error
                 if (error != null) {
                     item {
                         Card(
@@ -173,7 +196,12 @@ fun HomeScreen(
                                 modifier = Modifier.padding(12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.Error, contentDescription = null, tint = ErrorRed, modifier = Modifier.size(20.dp))
+                                Icon(
+                                    Icons.Default.Error,
+                                    contentDescription = null,
+                                    tint = ErrorRed,
+                                    modifier = Modifier.size(20.dp)
+                                )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(error!!, fontSize = 13.sp, color = ErrorRed)
                             }
@@ -186,69 +214,75 @@ fun HomeScreen(
 }
 
 @Composable
-fun HeroBanner() {
-    val gradient = Brush.horizontalGradient(
-        colors = listOf(PrimaryBrownDark, PrimaryBrown)
-    )
+fun HeroBanner(onPesanClick: () -> Unit) {
     Card(
-        shape = RoundedCornerShape(0.dp),
-        modifier = Modifier.fillMaxWidth()
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        colors = CardDefaults.cardColors(containerColor = Amber),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(gradient)
-                .padding(24.dp)
-        ) {
-            Column {
-                Surface(
-                    color = AccentGold,
-                    shape = RoundedCornerShape(6.dp)
-                ) {
-                    Text(
-                        "FRANCHISE BY BABE CABITA & KING ABDI",
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = White,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        letterSpacing = 1.sp
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Image(
+                painter = painterResource(id = R.drawable.img_hero),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(190.dp)
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(190.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.55f)
+                            )
+                        )
                     )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
+            )
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(16.dp)
+            ) {
                 Text(
                     "Telur Dadar Krispy",
                     color = White,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = 34.sp
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold
                 )
-                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     "Sambal Rempah Legendaris",
-                    color = AccentGold,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold
+                    color = White.copy(alpha = 0.85f),
+                    fontSize = 13.sp
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 Surface(
-                    color = White.copy(alpha = 0.15f),
-                    shape = RoundedCornerShape(8.dp)
+                    onClick = onPesanClick,
+                    shape = RoundedCornerShape(22.dp),
+                    color = White
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            Icons.Default.LocalOffer,
-                            contentDescription = null,
-                            tint = AccentGold,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            "Gratis ongkir untuk takeaway!",
-                            fontSize = 12.sp,
-                            color = White.copy(alpha = 0.9f)
+                            "Pesan Sekarang",
+                            color = BurntAmber,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Icon(
+                            Icons.Default.ArrowForward,
+                            contentDescription = null,
+                            tint = BurntAmber,
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                 }
@@ -258,66 +292,25 @@ fun HeroBanner() {
 }
 
 @Composable
-fun PromoCard() {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = AccentGold.copy(alpha = 0.12f))
-    ) {
-        Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                color = AccentGold,
-                shape = CircleShape,
-                modifier = Modifier.size(40.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        Icons.Default.LocalFireDepartment,
-                        contentDescription = null,
-                        tint = White,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text("Promo Spesial!", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = PrimaryBrownDark)
-                Text("Pesan 3 telur dadar gratis 1 sambal rempah", fontSize = 12.sp, color = TextSecondary)
-            }
-            Icon(
-                Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = PrimaryBrownLight
-            )
-        }
-    }
-}
-
-@Composable
 fun SectionHeader(title: String, subtitle: String?, onSeeAll: (() -> Unit)? = null) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(start = 16.dp, end = 8.dp, top = 14.dp, bottom = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(title, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = TextPrimary)
+        Text(title, fontWeight = FontWeight.Bold, fontSize = 17.sp, color = TextPrimary)
         if (subtitle != null && onSeeAll != null) {
             TextButton(onClick = onSeeAll) {
-                Text(subtitle, fontSize = 13.sp, color = PrimaryBrown)
+                Text(subtitle, fontSize = 13.sp, color = BurntAmber, fontWeight = FontWeight.Medium)
             }
         }
     }
 }
 
 @Composable
-fun CategoryItem(category: Category, onClick: () -> Unit) {
+fun CategoryTile(category: Category, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val icon = when (category.type) {
         "food" -> Icons.Default.Restaurant
         "beverage" -> Icons.Default.LocalCafe
@@ -326,20 +319,20 @@ fun CategoryItem(category: Category, onClick: () -> Unit) {
     }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .width(72.dp)
-            .clickable(onClick = onClick)
+        modifier = modifier.clickable(onClick = onClick)
     ) {
         Surface(
-            modifier = Modifier.size(56.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(68.dp),
             shape = RoundedCornerShape(16.dp),
-            color = PrimaryBrown.copy(alpha = 0.1f)
+            color = Amber.copy(alpha = 0.14f)
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     icon,
                     contentDescription = category.name,
-                    tint = PrimaryBrown,
+                    tint = BurntAmber,
                     modifier = Modifier.size(28.dp)
                 )
             }
@@ -357,81 +350,67 @@ fun CategoryItem(category: Category, onClick: () -> Unit) {
 }
 
 @Composable
-fun BestsellerCard(product: Product, onAddToCart: () -> Unit) {
+fun FavoriteMenuRow(product: Product, onClick: () -> Unit, onAddToCart: () -> Unit) {
     Card(
-        shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.width(170.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
     ) {
-        Column {
-            Box {
-                AsyncImage(
-                    model = product.resolvedImageUrl,
-                    contentDescription = product.name,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(110.dp)
-                        .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
-                )
-                Surface(
-                    color = AccentGold,
-                    shape = RoundedCornerShape(bottomStart = 8.dp, topEnd = 12.dp)
-                ) {
-                    Text(
-                        "Bestseller",
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = White,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                    )
-                }
-            }
-            Column(modifier = Modifier.padding(10.dp)) {
+        Row(
+            modifier = Modifier.padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AsyncImage(
+                model = product.resolvedImageUrl,
+                contentDescription = product.name,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(62.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(GrayLight)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     product.name,
                     fontWeight = FontWeight.SemiBold,
-                    fontSize = 13.sp,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    lineHeight = 18.sp
+                    fontSize = 14.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                if (product.spicinessLevel > 0) {
-                    Row {
-                        repeat(product.spicinessLevel) {
-                            Text("🌶", fontSize = 10.sp)
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                if (!product.description.isNullOrBlank()) {
                     Text(
-                        "Rp ${String.format("%,.0f", product.price)}",
-                        fontWeight = FontWeight.Bold,
-                        color = PrimaryBrown,
-                        fontSize = 13.sp
+                        product.description ?: "",
+                        fontSize = 11.sp,
+                        color = TextSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
-                    Surface(
-                        onClick = onAddToCart,
-                        shape = CircleShape,
-                        color = PrimaryBrown
-                    ) {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = "Tambah",
-                            tint = White,
-                            modifier = Modifier
-                                .size(28.dp)
-                                .padding(6.dp)
-                        )
-                    }
                 }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Rp ${String.format("%,.0f", product.price)}",
+                    fontWeight = FontWeight.Bold,
+                    color = AccentOrange,
+                    fontSize = 14.sp
+                )
+            }
+            Surface(
+                onClick = onAddToCart,
+                shape = CircleShape,
+                color = Amber
+            ) {
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = "Tambah",
+                    tint = White,
+                    modifier = Modifier
+                        .size(34.dp)
+                        .padding(8.dp)
+                )
             }
         }
     }
@@ -469,7 +448,7 @@ fun OutletCardCompact(outlet: Outlet, onClick: () -> Unit) {
                 Icon(
                     Icons.Default.LocationOn,
                     contentDescription = null,
-                    tint = PrimaryBrownLight,
+                    tint = BurntAmber,
                     modifier = Modifier.size(14.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))

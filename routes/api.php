@@ -36,6 +36,8 @@ Route::get('/reviews', [ReviewController::class, 'index']);
 // Guest checkout is allowed; order is linked to the user when a Sanctum token is sent.
 Route::post('/orders', [ApiOrderController::class, 'store']);
 Route::get('/orders/{orderNumber}', [ApiOrderController::class, 'show']);
+Route::put('/orders/{orderNumber}', [ApiOrderController::class, 'update']);
+Route::post('/orders/{orderNumber}/cancel', [ApiOrderController::class, 'cancel']);
 Route::post('/orders/{orderNumber}/simulate-payment', [ApiOrderController::class, 'simulatePayment']);
 Route::post('/orders/{orderNumber}/simulate-status', [ApiOrderController::class, 'simulateStatus']);
 

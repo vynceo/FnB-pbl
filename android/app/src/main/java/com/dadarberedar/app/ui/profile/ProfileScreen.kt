@@ -15,6 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -73,20 +75,21 @@ class ProfileViewModel @Inject constructor(
 fun ProfileScreen(
     onLoginClick: () -> Unit,
     onRegisterClick: () -> Unit,
+    onOrdersClick: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val isLoggedIn by viewModel.isLoggedIn.collectAsState()
     val userName by viewModel.userName.collectAsState()
     val userEmail by viewModel.userEmail.collectAsState()
+    val clipboard = LocalClipboardManager.current
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Profil", fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = PrimaryBrown,
-                    titleContentColor = White
-                )
+                title = {
+                    Text("Profil", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = TextPrimary)
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceWhite)
             )
         }
     ) { paddingVals ->
@@ -97,108 +100,130 @@ fun ProfileScreen(
                 .background(BackgroundCream)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Profile Header
-            Surface(
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Avatar + nama
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                color = PrimaryBrown
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                Surface(
+                    shape = CircleShape,
+                    color = Amber,
+                    shadowElevation = 4.dp
                 ) {
                     Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(CircleShape)
-                            .background(AccentGold),
+                        modifier = Modifier.size(92.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            Icons.Default.Person,
-                            contentDescription = null,
-                            modifier = Modifier.size(44.dp),
-                            tint = White
+                        Text(
+                            if (isLoggedIn && userName.isNotBlank()) userName.first().uppercase() else "T",
+                            fontSize = 36.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = White
                         )
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        if (isLoggedIn) userName else "Tamu",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = White
-                    )
-                    if (isLoggedIn && userEmail.isNotBlank()) {
-                        Text(
-                            userEmail,
-                            fontSize = 13.sp,
-                            color = White.copy(alpha = 0.7f)
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    if (isLoggedIn) userName else "Tamu",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                if (isLoggedIn && userEmail.isNotBlank()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Email,
+                            contentDescription = null,
+                            tint = TextSecondary,
+                            modifier = Modifier.size(14.dp)
                         )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(userEmail, fontSize = 13.sp, color = TextSecondary)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        IconButton(
+                            onClick = { clipboard.setText(AnnotatedString(userEmail)) },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.ContentCopy,
+                                contentDescription = "Salin",
+                                tint = BurntAmber,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             if (!isLoggedIn) {
-                // Guest prompt
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceWhite)
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                 ) {
                     Column(
                         modifier = Modifier.padding(20.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Icon(
-                            Icons.Default.Login,
+                            Icons.Default.Person,
                             contentDescription = null,
                             modifier = Modifier.size(40.dp),
-                            tint = PrimaryBrown
+                            tint = BurntAmber
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text("Masuk untuk menikmati semua fitur", fontSize = 14.sp, color = TextSecondary)
                         Spacer(modifier = Modifier.height(16.dp))
                         Button(
                             onClick = onLoginClick,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBrown),
-                            shape = RoundedCornerShape(10.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Amber),
+                            shape = RoundedCornerShape(24.dp)
                         ) {
-                            Text("Masuk", fontSize = 16.sp, modifier = Modifier.padding(vertical = 4.dp))
+                            Text("Masuk", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
                         OutlinedButton(
                             onClick = onRegisterClick,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(10.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            shape = RoundedCornerShape(24.dp)
                         ) {
-                            Text("Daftar Akun Baru", fontSize = 16.sp, modifier = Modifier.padding(vertical = 4.dp))
+                            Text("Daftar Akun Baru", fontSize = 15.sp)
                         }
                     }
                 }
             } else {
-                // Profile Menu
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceWhite)
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                 ) {
-                    Column(modifier = Modifier.padding(4.dp)) {
+                    Column(modifier = Modifier.padding(vertical = 4.dp)) {
                         ProfileMenuItem(
-                            icon = Icons.Default.Receipt,
-                            title = "Pesanan Saya",
-                            subtitle = "Lihat riwayat pesanan",
-                            onClick = { /* navigate to orders */ }
+                            icon = Icons.Default.ReceiptLong,
+                            title = "Riwayat Pesanan",
+                            subtitle = "Lihat status & pesanan sebelumnya",
+                            onClick = onOrdersClick
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = DividerColor)
                         ProfileMenuItem(
                             icon = Icons.Default.LocationOn,
-                            title = "Alamat Tersimpan",
+                            title = "Alamat Saya",
                             subtitle = "Kelola alamat pengiriman",
                             onClick = { }
                         )
@@ -209,19 +234,7 @@ fun ProfileScreen(
                             subtitle = "Kelola metode pembayaran",
                             onClick = { }
                         )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceWhite)
-                ) {
-                    Column(modifier = Modifier.padding(4.dp)) {
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = DividerColor)
                         ProfileMenuItem(
                             icon = Icons.Default.Help,
                             title = "Bantuan",
@@ -231,54 +244,34 @@ fun ProfileScreen(
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = DividerColor)
                         ProfileMenuItem(
                             icon = Icons.Default.Info,
-                            title = "Tentang Kami",
-                            subtitle = "Dadar Beredar - Franchise by Babe Cabita & King Abdi",
+                            title = "Tentang Aplikasi",
+                            subtitle = "Dadar Beredar v1.0.0",
                             onClick = { }
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // Logout
-                Card(
+                OutlinedButton(
+                    onClick = { viewModel.logout() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
-                        .clickable { viewModel.logout() },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceWhite)
+                        .height(50.dp),
+                    shape = RoundedCornerShape(25.dp),
+                    border = ButtonDefaults.outlinedButtonBorder(enabled = true),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorRed)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Logout,
-                            contentDescription = null,
-                            tint = ErrorRed,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text("Keluar", color = ErrorRed, fontWeight = FontWeight.Medium, fontSize = 15.sp)
-                    }
+                    Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Keluar", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // App Info
+            Spacer(modifier = Modifier.height(20.dp))
             Text(
-                "Dadar Beredar v1.0.0",
-                fontSize = 12.sp,
-                color = TextTertiary,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .wrapContentWidth(Alignment.CenterHorizontally)
-            )
-            Text(
-                "Telur Dadar Krispy, Sambal Rempah Legendaris",
+                "Rasa Lezat, Bikin Nagih Setiap Saat",
                 fontSize = 11.sp,
                 color = TextTertiary,
                 modifier = Modifier
@@ -301,18 +294,26 @@ fun ProfileMenuItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(16.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            tint = PrimaryBrown,
-            modifier = Modifier.size(24.dp)
-        )
+        Surface(
+            shape = RoundedCornerShape(10.dp),
+            color = Amber.copy(alpha = 0.14f),
+            modifier = Modifier.size(38.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = BurntAmber,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontWeight = FontWeight.Medium, fontSize = 15.sp, color = TextPrimary)
+            Text(title, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = TextPrimary)
             Text(subtitle, fontSize = 12.sp, color = TextSecondary)
         }
         Icon(

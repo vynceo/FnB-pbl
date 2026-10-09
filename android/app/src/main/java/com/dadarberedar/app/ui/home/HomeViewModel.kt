@@ -6,6 +6,7 @@ import com.dadarberedar.app.data.model.Category
 import com.dadarberedar.app.data.model.Outlet
 import com.dadarberedar.app.data.model.Product
 import com.dadarberedar.app.data.remote.ApiService
+import com.dadarberedar.app.ui.menu.MenuSelectionBus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +16,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val apiService: ApiService
+    private val apiService: ApiService,
+    private val selectionBus: MenuSelectionBus
 ) : ViewModel() {
 
     private val _outlets = MutableStateFlow<List<Outlet>>(emptyList())
@@ -38,6 +40,10 @@ class HomeViewModel @Inject constructor(
 
     init {
         loadHomeData()
+    }
+
+    fun selectCategory(categoryId: Long?) {
+        selectionBus.select(categoryId)
     }
 
     fun loadHomeData() {

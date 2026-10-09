@@ -54,6 +54,13 @@ data class CheckoutRequest(
     val items: List<CheckoutItem>
 )
 
+data class OrderUpdateRequest(
+    @SerializedName("customer_name") val customerName: String? = null,
+    @SerializedName("customer_phone") val customerPhone: String? = null,
+    @SerializedName("delivery_address") val deliveryAddress: String? = null,
+    @SerializedName("delivery_notes") val deliveryNotes: String? = null
+)
+
 data class Review(
     val id: Long,
     @SerializedName("outlet_id") val outletId: Long,

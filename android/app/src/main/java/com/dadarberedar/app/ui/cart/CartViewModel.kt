@@ -15,8 +15,8 @@ import javax.inject.Inject
 
 data class CartItem(
     val product: Product,
-    var quantity: Int,
-    var notes: String? = null
+    val quantity: Int,
+    val notes: String? = null
 )
 
 sealed class Resource<out T> {
@@ -28,13 +28,30 @@ sealed class Resource<out T> {
 
 @HiltViewModel
 class CartViewModel @Inject constructor(
-    private val apiService: ApiService
+    private val apiService: ApiService,
+    private val cartStorage: CartStorage
 ) : ViewModel() {
 
     private val _cartItems = mutableStateListOf<CartItem>()
     val cartItems: List<CartItem> get() = _cartItems
 
     var selectedOutletId = mutableStateOf<Long?>(null)
+
+    init {
+        viewModelScope.launch {
+            val (items, outletId) = cartStorage.load()
+            if (items.isNotEmpty()) {
+                _cartItems.addAll(items)
+                selectedOutletId.value = outletId
+            }
+        }
+    }
+
+    private fun persist() {
+        viewModelScope.launch {
+            cartStorage.save(_cartItems.toList(), selectedOutletId.value)
+        }
+    }
 
     val subtotal: Double
         get() = _cartItems.sumOf { it.product.price * it.quantity }
@@ -51,39 +68,49 @@ class CartViewModel @Inject constructor(
     private val _checkoutState = MutableStateFlow<Resource<Order>>(Resource.Idle)
     val checkoutState: StateFlow<Resource<Order>> = _checkoutState.asStateFlow()
 
-    fun addToCart(product: Product, outletId: Long) {
+    fun addToCart(product: Product, outletId: Long, quantity: Int = 1) {
         if (selectedOutletId.value != null && selectedOutletId.value != outletId) {
             _cartItems.clear()
         }
         selectedOutletId.value = outletId
 
-        val existing = _cartItems.find { it.product.id == product.id }
-        if (existing != null) {
-            existing.quantity++
+        val index = _cartItems.indexOfFirst { it.product.id == product.id }
+        if (index >= 0) {
+            val current = _cartItems[index]
+            _cartItems[index] = current.copy(quantity = current.quantity + quantity)
         } else {
-            _cartItems.add(CartItem(product = product, quantity = 1))
+            _cartItems.add(CartItem(product = product, quantity = quantity))
         }
+        persist()
     }
 
     fun updateQuantity(productId: Long, delta: Int) {
-        val item = _cartItems.find { it.product.id == productId } ?: return
-        item.quantity += delta
-        if (item.quantity <= 0) {
-            _cartItems.remove(item)
+        val index = _cartItems.indexOfFirst { it.product.id == productId }
+        if (index < 0) return
+        val current = _cartItems[index]
+        val newQuantity = current.quantity + delta
+        if (newQuantity <= 0) {
+            _cartItems.removeAt(index)
             if (_cartItems.isEmpty()) {
                 selectedOutletId.value = null
             }
+        } else {
+            _cartItems[index] = current.copy(quantity = newQuantity)
         }
+        persist()
     }
 
     fun updateNotes(productId: Long, notes: String) {
-        val item = _cartItems.find { it.product.id == productId } ?: return
-        item.notes = notes.ifBlank { null }
+        val index = _cartItems.indexOfFirst { it.product.id == productId }
+        if (index < 0) return
+        _cartItems[index] = _cartItems[index].copy(notes = notes.ifBlank { null })
+        persist()
     }
 
     fun clearCart() {
         _cartItems.clear()
         selectedOutletId.value = null
+        viewModelScope.launch { cartStorage.clear() }
     }
 
     fun checkout(

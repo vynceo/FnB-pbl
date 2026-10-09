@@ -11,9 +11,9 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val LightColorScheme = lightColorScheme(
-    primary = PrimaryBrown,
+    primary = Amber,
     onPrimary = White,
-    primaryContainer = PrimaryBrownLight,
+    primaryContainer = AmberLight,
     onPrimaryContainer = White,
     secondary = AccentGold,
     onSecondary = TextPrimary,
@@ -29,9 +29,9 @@ private val LightColorScheme = lightColorScheme(
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = PrimaryBrownLight,
+    primary = AmberLight,
     onPrimary = TextPrimary,
-    primaryContainer = PrimaryBrown,
+    primaryContainer = Amber,
     onPrimaryContainer = White,
     secondary = AccentGold,
     onSecondary = TextPrimary,
@@ -57,8 +57,18 @@ fun DadarBeredarTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+            val controller = WindowCompat.getInsetsController(window, view)
+            if (darkTheme) {
+                window.statusBarColor = colorScheme.surface.toArgb()
+                window.navigationBarColor = colorScheme.surface.toArgb()
+                controller.isAppearanceLightStatusBars = false
+                controller.isAppearanceLightNavigationBars = false
+            } else {
+                window.statusBarColor = SurfaceWhite.toArgb()
+                window.navigationBarColor = SurfaceWhite.toArgb()
+                controller.isAppearanceLightStatusBars = true
+                controller.isAppearanceLightNavigationBars = true
+            }
         }
     }
 

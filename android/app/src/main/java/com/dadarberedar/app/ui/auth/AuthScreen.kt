@@ -1,8 +1,10 @@
 package com.dadarberedar.app.ui.auth
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -12,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -20,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dadarberedar.app.R
 import com.dadarberedar.app.data.remote.ApiService
 import com.dadarberedar.app.data.remote.AuthManager
 import com.dadarberedar.app.ui.theme.*
@@ -100,13 +104,13 @@ fun LoginScreen(
                 title = { Text("Masuk") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Kembali", tint = White)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Kembali", tint = TextPrimary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = PrimaryBrown,
-                    titleContentColor = White,
-                    navigationIconContentColor = White
+                    containerColor = SurfaceWhite,
+                    titleContentColor = TextPrimary,
+                    navigationIconContentColor = TextPrimary
                 )
             )
         }
@@ -116,28 +120,14 @@ fun LoginScreen(
                 .fillMaxSize()
                 .padding(paddingVals)
                 .verticalScroll(rememberScrollState())
-                .background(BackgroundCream)
+                .background(SurfaceWhite)
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(32.dp))
+            AuthWaveHeader()
 
-            Surface(
-                modifier = Modifier.size(80.dp),
-                shape = RoundedCornerShape(24.dp),
-                color = PrimaryBrown
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        Icons.Default.Restaurant,
-                        contentDescription = null,
-                        tint = White,
-                        modifier = Modifier.size(44.dp)
-                    )
-                }
-            }
-            Text("Dadar Beredar", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = PrimaryBrownDark)
+            Text("Dadar Beredar", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
             Text("Masuk ke akun Anda", fontSize = 14.sp, color = TextSecondary)
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -147,13 +137,13 @@ fun LoginScreen(
                 onValueChange = { email = it },
                 label = { Text("Email") },
                 modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = PrimaryBrownLight) },
+                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = AmberLight) },
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                     keyboardType = androidx.compose.ui.text.input.KeyboardType.Email
                 ),
                 shape = RoundedCornerShape(10.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PrimaryBrown,
+                    focusedBorderColor = Amber,
                     unfocusedBorderColor = DividerColor
                 )
             )
@@ -163,20 +153,20 @@ fun LoginScreen(
                 onValueChange = { password = it },
                 label = { Text("Password") },
                 modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = PrimaryBrownLight) },
+                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = AmberLight) },
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
                             if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                             contentDescription = null,
-                            tint = PrimaryBrownLight
+                            tint = AmberLight
                         )
                     }
                 },
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 shape = RoundedCornerShape(10.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PrimaryBrown,
+                    focusedBorderColor = Amber,
                     unfocusedBorderColor = DividerColor
                 )
             )
@@ -187,8 +177,8 @@ fun LoginScreen(
                     .fillMaxWidth()
                     .height(52.dp),
                 enabled = email.isNotBlank() && password.isNotBlank() && !isLoading,
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBrown),
-                shape = RoundedCornerShape(12.dp)
+                colors = ButtonDefaults.buttonColors(containerColor = Amber),
+                shape = RoundedCornerShape(26.dp)
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(color = White, modifier = Modifier.size(24.dp))
@@ -207,7 +197,7 @@ fun LoginScreen(
             }
 
             TextButton(onClick = onRegisterClick) {
-                Text("Belum punya akun? Daftar", color = PrimaryBrown, fontWeight = FontWeight.Medium)
+                Text("Belum punya akun? Daftar", color = Amber, fontWeight = FontWeight.Medium)
             }
         }
     }
@@ -239,13 +229,13 @@ fun RegisterScreen(
                 title = { Text("Daftar") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Kembali", tint = White)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Kembali", tint = TextPrimary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = PrimaryBrown,
-                    titleContentColor = White,
-                    navigationIconContentColor = White
+                    containerColor = SurfaceWhite,
+                    titleContentColor = TextPrimary,
+                    navigationIconContentColor = TextPrimary
                 )
             )
         }
@@ -255,21 +245,21 @@ fun RegisterScreen(
                 .fillMaxSize()
                 .padding(paddingVals)
                 .verticalScroll(rememberScrollState())
-                .background(BackgroundCream)
+                .background(SurfaceWhite)
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
+            AuthWaveHeader(compact = true)
 
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
                 label = { Text("Nama Lengkap") },
                 modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = PrimaryBrownLight) },
+                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = AmberLight) },
                 shape = RoundedCornerShape(10.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PrimaryBrown,
+                    focusedBorderColor = Amber,
                     unfocusedBorderColor = DividerColor
                 )
             )
@@ -279,10 +269,10 @@ fun RegisterScreen(
                 onValueChange = { email = it },
                 label = { Text("Email") },
                 modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = PrimaryBrownLight) },
+                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = AmberLight) },
                 shape = RoundedCornerShape(10.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PrimaryBrown,
+                    focusedBorderColor = Amber,
                     unfocusedBorderColor = DividerColor
                 )
             )
@@ -292,10 +282,10 @@ fun RegisterScreen(
                 onValueChange = { phone = it },
                 label = { Text("Nomor Telepon (Opsional)") },
                 modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = PrimaryBrownLight) },
+                leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = AmberLight) },
                 shape = RoundedCornerShape(10.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PrimaryBrown,
+                    focusedBorderColor = Amber,
                     unfocusedBorderColor = DividerColor
                 )
             )
@@ -305,20 +295,20 @@ fun RegisterScreen(
                 onValueChange = { password = it },
                 label = { Text("Password") },
                 modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = PrimaryBrownLight) },
+                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = AmberLight) },
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
                             if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                             contentDescription = null,
-                            tint = PrimaryBrownLight
+                            tint = AmberLight
                         )
                     }
                 },
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 shape = RoundedCornerShape(10.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PrimaryBrown,
+                    focusedBorderColor = Amber,
                     unfocusedBorderColor = DividerColor
                 )
             )
@@ -329,8 +319,8 @@ fun RegisterScreen(
                     .fillMaxWidth()
                     .height(52.dp),
                 enabled = name.isNotBlank() && email.isNotBlank() && password.length >= 6 && !isLoading,
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBrown),
-                shape = RoundedCornerShape(12.dp)
+                colors = ButtonDefaults.buttonColors(containerColor = Amber),
+                shape = RoundedCornerShape(26.dp)
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(color = White, modifier = Modifier.size(24.dp))
@@ -347,6 +337,40 @@ fun RegisterScreen(
                     Text(error!!, modifier = Modifier.padding(12.dp), color = ErrorRed, fontSize = 13.sp)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun AuthWaveHeader(compact: Boolean = false) {
+    val headerHeight = if (compact) 130.dp else 170.dp
+    val logoSize = if (compact) 80.dp else 96.dp
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(headerHeight),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(
+                    Brush.verticalGradient(listOf(Amber, AmberLight)),
+                    RoundedCornerShape(bottomStart = 70.dp, bottomEnd = 70.dp)
+                )
+        )
+        Surface(
+            shape = CircleShape,
+            color = White,
+            shadowElevation = 6.dp
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.ic_logo_pan),
+                contentDescription = "Logo Dadar Beredar",
+                modifier = Modifier
+                    .size(logoSize)
+                    .padding(12.dp)
+            )
         }
     }
 }
