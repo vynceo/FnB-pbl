@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dadarberedar.app.data.model.*
 import com.dadarberedar.app.data.remote.ApiService
+import com.dadarberedar.app.ui.orders.OrderHistoryStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,7 +30,8 @@ sealed class Resource<out T> {
 @HiltViewModel
 class CartViewModel @Inject constructor(
     private val apiService: ApiService,
-    private val cartStorage: CartStorage
+    private val cartStorage: CartStorage,
+    private val historyStore: OrderHistoryStore
 ) : ViewModel() {
 
     private val _cartItems = mutableStateListOf<CartItem>()
@@ -149,6 +151,7 @@ class CartViewModel @Inject constructor(
                 val response = apiService.createOrder(authHeader, request)
                 if (response.isSuccessful && response.body()?.order != null) {
                     val order = response.body()!!.order!!
+                    historyStore.saveOrderNumber(order.orderNumber)
                     clearCart()
                     _checkoutState.value = Resource.Success(order)
                 } else {

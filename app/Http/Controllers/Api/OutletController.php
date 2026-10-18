@@ -75,8 +75,7 @@ class OutletController extends Controller
     public function products(Request $request, Outlet $outlet)
     {
         $query = \App\Models\Product::with('category')
-            ->available()
-            ->where('outlet_id', $outlet->id);
+            ->available();
 
         if ($categoryId = $request->query('category_id')) {
             $query->where('category_id', $categoryId);

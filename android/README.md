@@ -3,8 +3,9 @@
 Aplikasi Android untuk franchise **Telur Dadar Krispy, Sambal Rempah Legendaris**
 (Franchise by Babe Cabita & King Abdi). Mengonsumsi Laravel API dari backend project ini.
 
-UI mengikuti gaya aplikasi F&B modern seperti **Tomoro Coffee / Kopi Kenangan**:
-warm brown tones, hero banner, kategori, bestseller horizontal scroll, bottom navigation.
+UI mengikuti gaya aplikasi F&B modern sesuai desain Figma: tema **kuning/amber**
+(`#FFB300`), top bar putih + ikon gelap, background cream, hero banner, kategori,
+bestseller horizontal scroll, bottom navigation 5 tab (termasuk **Riwayat**).
 
 - **Package**: `com.dadarberedar.app`
 - **Versi**: `1.0.0` (versionCode 1)
@@ -84,9 +85,11 @@ android/
 │               ├── components/BottomNavBar.kt
 │               ├── home/        HomeScreen.kt, HomeViewModel.kt
 │               ├── menu/        MenuScreen.kt, MenuViewModel.kt
-│               ├── cart/        CartScreen.kt, CartViewModel.kt, CheckoutScreen.kt
-│               ├── orders/      MyOrdersScreen.kt, MyOrdersViewModel.kt
+│               ├── cart/        CartScreen.kt, CartViewModel.kt, CheckoutScreen.kt, CartStorage.kt
+│               ├── orders/      MyOrdersScreen.kt, MyOrdersViewModel.kt, OrderHistoryStore.kt
 │               ├── outlet/      OutletDetailScreen.kt, OutletDetailViewModel.kt
+│               ├── payment/     PaymentScreen.kt, PaymentViewModel.kt
+│               ├── product/     ProductDetailScreen.kt, ProductDetailViewModel.kt
 │               ├── profile/     ProfileScreen.kt (berisi ProfileViewModel)
 │               ├── search/      SearchScreen.kt (berisi SearchViewModel)
 │               ├── tracking/    OrderTrackingScreen.kt, OrderTrackingViewModel.kt
@@ -112,10 +115,11 @@ Laravel API (Sanctum)
 
 - **State**: `StateFlow` per ViewModel, di-observe via `collectAsState()`
 - **Dependency Injection**: Hilt, semua ViewModel `@HiltViewModel`
-- **DataStore**: token Sanctum + nama/email user
+- **DataStore**: token Sanctum + nama/email user + keranjang (`CartStorage`) +
+  riwayat nomor pesanan (`OrderHistoryStore`)
 - **Model API**: Gson deserialize ke data class Kotlin
-- **Kartu keranjang**: state in-memory di `CartViewModel` (satu instance per NavBackStack —
-  keranjang hidup selama sesi, hilang saat app close)
+- **Kartu keranjang**: state di `CartViewModel`, **persist ke DataStore** — pulih walau
+  aplikasi ditutup; disimpan bersama `selectedOutletId`
 
 ---
 
@@ -129,11 +133,13 @@ Laravel API (Sanctum)
 | `home` | HomeScreen (hero, promo, kategori, bestseller, outlet) | ✅ Beranda |
 | `menu` | MenuScreen (full menu + filter kategori) | ✅ Menu |
 | `cart` | CartScreen (item, qty, subtotal/pajak/total) | ✅ Keranjang |
-| `my_orders` | MyOrdersScreen (riwayat pesanan) | ✅ Pesanan |
+| `my_orders` | MyOrdersScreen (riwayat pesanan: filter, bayar, batalkan) | ✅ Riwayat |
 | `profile` | ProfileScreen (akun, pengaturan, logout) | ✅ Profil |
 | `outlet/{outletId}` | OutletDetailScreen (info, menu, ulasan, link delivery) | — |
 | `checkout` | CheckoutScreen (jenis pesanan, data diri, pembayaran) | — |
+| `payment/{orderNumber}` | PaymentScreen (lanjutkan pembayaran dari Riwayat) | — |
 | `tracking/{orderNumber}` | OrderTrackingScreen (status + simulasi demo) | — |
+| `product/{productId}` | ProductDetailScreen (detail menu + stepper qty) | — |
 | `login` / `register` | AuthScreen | — |
 | `search` | SearchScreen (debounce 500ms) | — |
 
@@ -141,40 +147,41 @@ Laravel API (Sanctum)
 
 ```
 Splash → Home
-Home ⇄ (bottom nav) Menu / Cart / Orders / Profile
-Home → Search → OutletDetail → Cart → Checkout → Tracking
-Profile → Login/Register → back ke Home
-OutletDetail → Cart
-Orders → Tracking
+Home ⇄ (bottom nav) Menu / Cart / Riwayat / Profil
+Home → Search / OutletDetail / ProductDetail → Cart → Checkout → Tracking
+Riwayat → Tracking | Payment → Tracking | Batalkan (dialog, status Diterima)
+Profil → Riwayat | Login/Register → back ke Home
 ```
 
 - Bottom nav memakai `popUpTo(Home) { saveState } + restoreState` sehingga state tiap tab
   dipertahankan (standard Material bottom-nav behavior).
 - Transisi antar screen: fade 300ms.
-- `BottomNavBar` menampilkan **badge counter** jumlah item keranjang (warna gold).
+- `BottomNavBar` menampilkan **badge counter** jumlah item keranjang (warna amber).
 
 ---
 
 ## Design System
 
-### Warna (gaya Tomoro/Kopi Kenangan — warm brown)
+### Warna (sesuai desain Figma — kuning/amber)
 
 | Token | Hex | Pemakaian |
 |---|---|---|
-| `PrimaryBrown` | `#5D4037` | Warna utama (top bar, tombol, aksen) |
-| `PrimaryBrownDark` | `#3E2723` | Splash background, hero gradient |
-| `PrimaryBrownLight` | `#8D6E63` | Ikon sekunder, dark-scheme primary |
-| `AccentGold` | `#FFB300` | Badge, bestseller, aksen emas |
+| `Amber` | `#FFB300` | Warna utama (tombol, aksen, bottom-nav aktif) |
+| `BurntAmber` | `#FF8F00` | Aksen kuat, hero, pressed |
+| `AmberLight` | `#FFD54F` | Highlight lembut, dark-scheme primary |
+| `AccentGold` | `#FFC107` | Badge, bestseller |
 | `AccentOrange` | `#FF8F00` | Promo, ikon GoFood |
-| `BackgroundCream` | `#FAF7F2` | Background aplikasi (light) |
-| `SurfaceWhite` | `#FFFFFF` | Card, surface |
-| `TextPrimary` | `#3E2723` | Teks utama |
-| `TextSecondary` | `#8D6E63` | Teks sekunder |
-| `TextTertiary` | `#BCAAA4` | Teks placeholder/tertiary |
+| `BackgroundCream` | `#FDFBF7` | Background aplikasi (light) |
+| `BackgroundWarm` | `#FFF6E0` | Latar hangat (splash/aksen) |
+| `SurfaceWhite` | `#FFFFFF` | Card, top bar, surface |
+| `TextPrimary` | `#1A1A1A` | Teks utama (ikon top bar gelap) |
+| `TextSecondary` | `#757575` | Teks sekunder |
+| `TextTertiary` | `#BDBDBD` | Teks placeholder/tertiary |
 | `SuccessGreen` | `#43A047` | Status delivered/outlet buka |
 | `ErrorRed` | `#E53935` | Error, status cancelled, logout |
+| `WarningAmber` | `#FFA000` | Peringatan |
 
-Dark theme tersedia (`Theme.kt`): background `#1C1410`, surface `#2A1F18`.
+Light theme: status bar **putih + dark icons**. Dark theme tersedia (`Theme.kt`).
 
 ### Tipografi
 
@@ -183,11 +190,13 @@ FontFamily default, letter-spacing negatif di display untuk kesan premium.
 
 ### Komponen khas
 
-- **Hero banner**: gradient `PrimaryBrownDark → PrimaryBrown`, badge "FRANCHISE BY..."
+- **Hero banner**: foto `img_hero` + overlay gradasi amber, tagline
+  "Rasa Lezat, Bikin Nagih Setiap Saat", tombol "Pesan Sekarang"
+- **Splash**: background cream + lingkaran dekoratif + logo `ic_logo_full` + tagline
 - **Product card**: image + badge (Bestseller/Signature/Krispy) + level pedas 🌶 + tombol
   tambah bulat
-- **Kategori**: icon chip 56dp rounded-16, warna brown tint
-- **Status order**: badge berwarna (Diterima=Brown, Dimasak=Gold, Siap/Selesai=Green,
+- **Kategori**: icon chip 56dp rounded-16, tint amber
+- **Status order**: badge berwarna (Diterima=Amber, Dimasak=Gold, Siap/Selesai=Green,
   Dibatalkan=Red)
 
 ---
@@ -212,6 +221,8 @@ FontFamily default, letter-spacing negatif di display untuk kesan premium.
 | GET | `api/search?q=` | `{success, products[], outlets[]}` | `SearchResponse` |
 | POST | `api/orders` | `{success, message, order}` | `OrderCreateResponse` |
 | GET | `api/orders/{orderNumber}` | `{success, order}` | `OrderTrackingResponse` |
+| PUT | `api/orders/{orderNumber}` | `{success, order}` | `OrderActionResponse` |
+| POST | `api/orders/{orderNumber}/cancel` | `{success, message, order}` | `OrderActionResponse` |
 | POST | `api/orders/{orderNumber}/simulate-payment` | `{success, message, order}` | `OrderActionResponse` |
 | POST | `api/orders/{orderNumber}/simulate-status` | `{success, order}` | `OrderActionResponse` |
 | GET | `api/orders` (auth) | `{success, orders[]}` | `OrdersResponse` |
@@ -250,8 +261,13 @@ Relatif di-prefix dengan `AppConfig.BASE_URL`. Dipakai di HomeScreen & MenuScree
   `user_email`.
 - **Login/Register** (`AuthScreen.kt`): sukses → token & user disimpan → kembali ke Home.
 - **Checkout guest** didukung (tanpa token order tetap dibuat).
-- **Order history** (`MyOrdersScreen`) membutuhkan login; request memakai
-  `Authorization: Bearer <token>`.
+- **Order history** (`MyOrdersScreen`, tab Riwayat): login → digabung dari
+  `GET api/orders`; **tamu tetap punya riwayat** lewat nomor pesanan yang disimpan
+  lokal di DataStore (`OrderHistoryStore`, key `order_history_numbers`) lalu detailnya
+  diambil via `GET api/orders/{orderNumber}` (endpoint publik).
+- **Pembatalan** sebelum dikonfirmasi pegawai (status `received`): tombol Batalkan di
+  tab Riwayat → dialog konfirmasi → `POST api/orders/{orderNumber}/cancel`
+  (ownership dicek server).
 - **Logout** (`ProfileScreen`): revoke token via API + clear DataStore.
 
 ---
@@ -270,6 +286,9 @@ Relatif di-prefix dengan `AppConfig.BASE_URL`. Dipakai di HomeScreen & MenuScree
 5. **OrderTrackingScreen**: status order + pembayaran, daftar item, tombol simulasi demo
    (`simulate-payment`, `simulate-status` dengan `order_status`:
    cooking/ready/delivered).
+6. **Tab Riwayat** (`MyOrdersScreen`): filter chip (Semua/Belum Bayar/Berjalan/Selesai/
+   Dibatalkan), per kartu aksi **Lacak** / **Bayar** (→ `PaymentScreen`, `POST
+   simulate-payment`) / **Batalkan** (dialog → `POST cancel`, hanya status `received`).
 
 Nomor order format: `DAR-YYYYMMDD-XXXXX`.
 
@@ -352,10 +371,11 @@ Tombolnya ada di OrderTrackingScreen.
 
 ### Keputusan desain saat ini
 
-- Keranjang in-memory (per sesi) — belum persist ke backend sebelum checkout.
+- Keranjang **persisten** (DataStore `cart_items_json` + `cart_outlet_id`) — pulih
+  walau aplikasi ditutup.
 - Search: debounce 500ms, minimal 2 karakter, hasil produk + outlet.
-- Order history hanya untuk user login (guest tetap bisa checkout + tracking via
-  order number).
+- Order history: server (login) + lokal DataStore (tamu), digabung & dedup di
+  `MyOrdersViewModel`.
 - Icon launcher default (adaptive icon XML), belum ada aset gambar custom.
 
 ### Troubleshooting
@@ -366,5 +386,5 @@ Tombolnya ada di OrderTrackingScreen.
 | Gambar tidak muncul | `image_url` relatif, Coil butuh absolut | Pakai `product.resolvedImageUrl` |
 | Data kosong + log `ConnectException` | Base URL salah / backend mati | Cek `AppConfig.BASE_URL`, jalankan `php artisan serve` |
 | Device fisik gagal koneksi | `10.0.2.2` hanya untuk emulator | Ganti ke IP LAN komputer |
-| Order history kosong / 401 | Belum login atau token expired | Login ulang via Profile |
+| Order history kosong / 401 | Belum login atau token expired | Login ulang via Profile — pesanan tamu tetap tampil dari riwayat lokal DataStore |
 | Simulasi status 422 | Salah key body | Kirim `order_status` (bukan `status`) |

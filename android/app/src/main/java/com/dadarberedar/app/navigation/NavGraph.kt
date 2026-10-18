@@ -21,6 +21,7 @@ import com.dadarberedar.app.ui.home.HomeScreen
 import com.dadarberedar.app.ui.menu.MenuScreen
 import com.dadarberedar.app.ui.orders.MyOrdersScreen
 import com.dadarberedar.app.ui.outlet.OutletDetailScreen
+import com.dadarberedar.app.ui.payment.PaymentScreen
 import com.dadarberedar.app.ui.product.ProductDetailScreen
 import com.dadarberedar.app.ui.profile.ProfileScreen
 import com.dadarberedar.app.ui.search.SearchScreen
@@ -45,6 +46,9 @@ sealed class Screen(val route: String) {
     object Cart : Screen("cart")
     object Checkout : Screen("checkout")
     object MyOrders : Screen("my_orders")
+    object Payment : Screen("payment/{orderNumber}") {
+        fun createRoute(orderNumber: String) = "payment/$orderNumber"
+    }
     object OrderTracking : Screen("tracking/{orderNumber}") {
         fun createRoute(orderNumber: String) = "tracking/$orderNumber"
     }
@@ -55,6 +59,7 @@ private val bottomNavRoutes = listOf(
     Screen.Home.route,
     Screen.Menu.route,
     Screen.Cart.route,
+    Screen.MyOrders.route,
     Screen.Profile.route
 )
 
@@ -224,9 +229,31 @@ fun MainApp() {
 
             composable(Screen.MyOrders.route) {
                 MyOrdersScreen(
-                    onBack = { navController.popBackStack() },
                     onOrderClick = { orderNumber ->
                         navController.navigate(Screen.OrderTracking.createRoute(orderNumber))
+                    },
+                    onPayClick = { orderNumber ->
+                        navController.navigate(Screen.Payment.createRoute(orderNumber))
+                    },
+                    onLoginClick = { navController.navigate(Screen.Login.route) }
+                )
+            }
+
+            composable(
+                route = Screen.Payment.route,
+                arguments = listOf(navArgument("orderNumber") { type = NavType.StringType })
+            ) {
+                PaymentScreen(
+                    onBack = { navController.popBackStack() },
+                    onPaid = { orderNumber ->
+                        navController.navigate(Screen.OrderTracking.createRoute(orderNumber)) {
+                            popUpTo(Screen.MyOrders.route)
+                        }
+                    },
+                    onTrack = { orderNumber ->
+                        navController.navigate(Screen.OrderTracking.createRoute(orderNumber)) {
+                            popUpTo(Screen.MyOrders.route)
+                        }
                     }
                 )
             }

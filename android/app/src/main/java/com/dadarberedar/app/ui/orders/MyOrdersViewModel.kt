@@ -15,7 +15,8 @@ import javax.inject.Inject
 @HiltViewModel
 class MyOrdersViewModel @Inject constructor(
     private val apiService: ApiService,
-    private val authManager: AuthManager
+    private val authManager: AuthManager,
+    private val historyStore: OrderHistoryStore
 ) : ViewModel() {
 
     private val _orders = MutableStateFlow<List<Order>>(emptyList())
@@ -30,6 +31,12 @@ class MyOrdersViewModel @Inject constructor(
     private val _isLoggedIn = MutableStateFlow(false)
     val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
 
+    private val _message = MutableStateFlow<String?>(null)
+    val message: StateFlow<String?> = _message.asStateFlow()
+
+    private val _isWorking = MutableStateFlow(false)
+    val isWorking: StateFlow<Boolean> = _isWorking.asStateFlow()
+
     init {
         loadOrders()
     }
@@ -41,23 +48,96 @@ class MyOrdersViewModel @Inject constructor(
             try {
                 val loggedIn = authManager.isLoggedIn()
                 _isLoggedIn.value = loggedIn
-                if (!loggedIn) {
-                    _error.value = "Silakan masuk terlebih dahulu"
-                    _isLoading.value = false
-                    return@launch
+
+                val merged = LinkedHashMap<String, Order>()
+
+                if (loggedIn) {
+                    val token = authManager.getToken() ?: ""
+                    val res = apiService.getMyOrders("Bearer $token")
+                    if (res.isSuccessful) {
+                        res.body()?.orders?.forEach { merged[it.orderNumber] = it }
+                    }
                 }
-                val token = authManager.getToken() ?: ""
-                val res = apiService.getMyOrders("Bearer $token")
-                if (res.isSuccessful) {
-                    _orders.value = res.body()?.orders ?: emptyList()
-                } else {
-                    _error.value = "Gagal memuat pesanan"
+
+                historyStore.getNumbers().forEach { number ->
+                    if (!merged.containsKey(number)) {
+                        try {
+                            val res = apiService.getOrderTracking(number)
+                            val fetched = res.body()?.order
+                            if (res.isSuccessful && fetched != null) {
+                                merged[number] = fetched
+                            }
+                        } catch (_: Exception) {
+                        }
+                    }
+                }
+
+                _orders.value = merged.values
+                    .sortedByDescending { it.createdAt ?: "" }
+
+                if (!loggedIn && merged.isEmpty()) {
+                    _error.value = null
                 }
             } catch (e: Exception) {
-                _error.value = "Error: ${e.localizedMessage}"
+                _error.value = "Gagal memuat riwayat: ${e.localizedMessage}"
             } finally {
                 _isLoading.value = false
             }
+        }
+    }
+
+    fun cancelOrder(orderNumber: String) {
+        viewModelScope.launch {
+            _isWorking.value = true
+            _message.value = null
+            try {
+                val token = authManager.getToken()?.let { "Bearer $it" }
+                val res = apiService.cancelOrder(orderNumber, token)
+                _message.value = when {
+                    res.isSuccessful -> res.body()?.message ?: "Pesanan dibatalkan"
+                    else -> parseError(res.errorBody()?.string()) ?: "Gagal membatalkan pesanan"
+                }
+                if (res.isSuccessful) loadOrders()
+            } catch (e: Exception) {
+                _message.value = "Gagal membatalkan pesanan"
+            } finally {
+                _isWorking.value = false
+            }
+        }
+    }
+
+    fun payOrder(orderNumber: String, onPaid: (String) -> Unit) {
+        viewModelScope.launch {
+            _isWorking.value = true
+            _message.value = null
+            try {
+                val res = apiService.simulatePayment(orderNumber)
+                if (res.isSuccessful) {
+                    _message.value = res.body()?.message ?: "Pembayaran berhasil"
+                    loadOrders()
+                    onPaid(orderNumber)
+                } else {
+                    _message.value = parseError(res.errorBody()?.string()) ?: "Pembayaran gagal"
+                }
+            } catch (e: Exception) {
+                _message.value = "Pembayaran gagal: jaringan bermasalah"
+            } finally {
+                _isWorking.value = false
+            }
+        }
+    }
+
+    fun clearMessage() {
+        _message.value = null
+    }
+
+    private fun parseError(body: String?): String? {
+        if (body.isNullOrBlank()) return null
+        return try {
+            val json = com.google.gson.JsonParser.parseString(body).asJsonObject
+            json.get("message")?.asString
+        } catch (_: Exception) {
+            null
         }
     }
 }
