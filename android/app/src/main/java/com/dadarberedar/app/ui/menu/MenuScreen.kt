@@ -179,7 +179,10 @@ fun MenuScreen(
                         MenuProductCard(
                             product = product,
                             onClick = { onProductClick(product.id) },
-                            onAddToCart = { cartViewModel.addToCart(product, 1L) }
+                            onAddToCart = {
+                                val outletId = cartViewModel.selectedOutletId.value ?: 1L
+                                cartViewModel.addToCart(product, outletId)
+                            }
                         )
                     }
                 }

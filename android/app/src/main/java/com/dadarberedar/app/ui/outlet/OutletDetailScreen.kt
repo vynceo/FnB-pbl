@@ -37,6 +37,7 @@ import com.dadarberedar.app.ui.theme.*
 fun OutletDetailScreen(
     onBack: () -> Unit,
     onCartClick: () -> Unit,
+    onProductClick: (Long) -> Unit = {},
     viewModel: OutletDetailViewModel = hiltViewModel(),
     cartViewModel: CartViewModel = hiltViewModel()
 ) {
@@ -263,6 +264,7 @@ fun OutletDetailScreen(
                     items(viewModel.getFilteredProducts()) { product ->
                         MenuProductCard(
                             product = product,
+                            onClick = { onProductClick(product.id) },
                             onAddToCart = {
                                 outlet?.let { o -> cartViewModel.addToCart(product, o.id) }
                             }

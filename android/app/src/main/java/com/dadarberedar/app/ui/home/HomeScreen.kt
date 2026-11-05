@@ -158,10 +158,8 @@ fun HomeScreen(
                                     product = product,
                                     onClick = { onProductClick(product.id) },
                                     onAddToCart = {
-                                        cartViewModel.addToCart(
-                                            product,
-                                            outlets.firstOrNull()?.id ?: 1L
-                                        )
+                                        val targetOutletId = cartViewModel.selectedOutletId.value ?: outlets.firstOrNull()?.id ?: 1L
+                                        cartViewModel.addToCart(product, targetOutletId)
                                     }
                                 )
                             }

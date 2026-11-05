@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.dadarberedar.app.data.model.*
 import com.dadarberedar.app.data.remote.ApiService
 import com.dadarberedar.app.ui.orders.OrderHistoryStore
+import com.dadarberedar.app.data.remote.AuthManager
+import com.google.gson.JsonParser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,6 +32,7 @@ sealed class Resource<out T> {
 @HiltViewModel
 class CartViewModel @Inject constructor(
     private val apiService: ApiService,
+    private val authManager: AuthManager,
     private val cartStorage: CartStorage,
     private val historyStore: OrderHistoryStore
 ) : ViewModel() {
@@ -115,8 +118,18 @@ class CartViewModel @Inject constructor(
         viewModelScope.launch { cartStorage.clear() }
     }
 
+    suspend fun getSavedUserDetails(): Triple<String?, String?, String?> {
+        return Triple(
+            authManager.getUserName(),
+            authManager.getUserPhone(),
+            authManager.getUserEmail()
+        )
+    }
+
+    suspend fun isLoggedIn(): Boolean = authManager.isLoggedIn()
+
     fun checkout(
-        token: String?,
+        token: String? = null,
         outletId: Long,
         deliveryType: String,
         customerName: String,
@@ -129,6 +142,7 @@ class CartViewModel @Inject constructor(
         viewModelScope.launch {
             _checkoutState.value = Resource.Loading
             try {
+                val effectiveToken = token ?: authManager.getToken()
                 val items = _cartItems.map {
                     CheckoutItem(
                         productId = it.product.id,
@@ -147,7 +161,7 @@ class CartViewModel @Inject constructor(
                     paymentMethod = paymentMethod,
                     items = items
                 )
-                val authHeader = token?.let { "Bearer $it" }
+                val authHeader = effectiveToken?.let { "Bearer $it" }
                 val response = apiService.createOrder(authHeader, request)
                 if (response.isSuccessful && response.body()?.order != null) {
                     val order = response.body()!!.order!!
@@ -155,14 +169,31 @@ class CartViewModel @Inject constructor(
                     clearCart()
                     _checkoutState.value = Resource.Success(order)
                 } else {
-                    val errorBody = response.errorBody()?.string()
-                        ?: response.body()?.message
-                        ?: ""
-                    _checkoutState.value = Resource.Error("Gagal membuat pesanan. $errorBody")
+                    val rawError = response.errorBody()?.string()
+                    val parsedMsg = parseOrderError(rawError, response.body()?.message ?: "Gagal membuat pesanan.")
+                    _checkoutState.value = Resource.Error(parsedMsg)
                 }
             } catch (e: Exception) {
                 _checkoutState.value = Resource.Error(e.localizedMessage ?: "Terjadi kesalahan jaringan.")
             }
+        }
+    }
+
+    private fun parseOrderError(raw: String?, fallback: String): String {
+        if (raw.isNullOrBlank()) return fallback
+        return try {
+            val json = JsonParser.parseString(raw).asJsonObject
+            if (json.has("errors")) {
+                val errors = json.getAsJsonObject("errors")
+                val firstEntry = errors.entrySet().firstOrNull()
+                val firstVal = firstEntry?.value
+                if (firstVal != null && firstVal.isJsonArray && firstVal.asJsonArray.size() > 0) {
+                    return firstVal.asJsonArray[0].asString
+                }
+            }
+            json.get("message")?.asString ?: fallback
+        } catch (_: Exception) {
+            fallback
         }
     }
 

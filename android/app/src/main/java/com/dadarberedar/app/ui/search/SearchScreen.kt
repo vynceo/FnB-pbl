@@ -20,6 +20,7 @@ import androidx.lifecycle.viewModelScope
 import com.dadarberedar.app.data.model.Outlet
 import com.dadarberedar.app.data.model.Product
 import com.dadarberedar.app.data.remote.ApiService
+import com.dadarberedar.app.ui.cart.CartViewModel
 import com.dadarberedar.app.ui.menu.MenuProductCard
 import com.dadarberedar.app.ui.outlet.OutletCard2
 import com.dadarberedar.app.ui.theme.*
@@ -83,14 +84,19 @@ class SearchViewModel @Inject constructor(
 fun SearchScreen(
     onBack: () -> Unit,
     onOutletClick: (Long) -> Unit,
-    viewModel: SearchViewModel = hiltViewModel()
+    onProductClick: (Long) -> Unit,
+    viewModel: SearchViewModel = hiltViewModel(),
+    cartViewModel: CartViewModel = hiltViewModel()
 ) {
     val query by viewModel.query.collectAsState()
     val products by viewModel.products.collectAsState()
     val outlets by viewModel.outlets.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -211,7 +217,17 @@ fun SearchScreen(
                         )
                     }
                     items(products) { product ->
-                        MenuProductCard(product = product, onAddToCart = {})
+                        MenuProductCard(
+                            product = product,
+                            onClick = { onProductClick(product.id) },
+                            onAddToCart = {
+                                val outletId = cartViewModel.selectedOutletId.value ?: 1L
+                                cartViewModel.addToCart(product, outletId)
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("${product.name} ditambahkan ke keranjang")
+                                }
+                            }
+                        )
                     }
                 }
             }

@@ -25,6 +25,7 @@ object AuthPrefs {
     val TOKEN_KEY = stringPreferencesKey("auth_token")
     val USER_NAME_KEY = stringPreferencesKey("user_name")
     val USER_EMAIL_KEY = stringPreferencesKey("user_email")
+    val USER_PHONE_KEY = stringPreferencesKey("user_phone")
 }
 
 @Module

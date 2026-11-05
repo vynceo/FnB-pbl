@@ -41,6 +41,10 @@ fun MyOrdersScreen(
     var filter by remember { mutableStateOf("all") }
     var cancelTarget by remember { mutableStateOf<Order?>(null) }
 
+    LaunchedEffect(Unit) {
+        viewModel.loadOrders()
+    }
+
     LaunchedEffect(message) {
         if (message != null) {
             delay(3000)

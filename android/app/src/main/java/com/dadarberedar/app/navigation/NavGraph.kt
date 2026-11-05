@@ -138,7 +138,8 @@ fun MainApp() {
                         navController.navigate(Screen.Cart.route) {
                             popUpTo(Screen.Home.route)
                         }
-                    }
+                    },
+                    cartViewModel = cartViewModel
                 )
             }
 
@@ -147,7 +148,8 @@ fun MainApp() {
                     onSearchClick = { navController.navigate(Screen.Search.route) },
                     onProductClick = { productId ->
                         navController.navigate(Screen.ProductDetail.createRoute(productId))
-                    }
+                    },
+                    cartViewModel = cartViewModel
                 )
             }
 
@@ -161,7 +163,8 @@ fun MainApp() {
                         navController.navigate(Screen.Cart.route) {
                             popUpTo(Screen.Home.route)
                         }
-                    }
+                    },
+                    cartViewModel = cartViewModel
                 )
             }
 
@@ -191,7 +194,11 @@ fun MainApp() {
                     onBack = { navController.popBackStack() },
                     onOutletClick = { outletId ->
                         navController.navigate(Screen.OutletDetail.createRoute(outletId))
-                    }
+                    },
+                    onProductClick = { productId ->
+                        navController.navigate(Screen.ProductDetail.createRoute(productId))
+                    },
+                    cartViewModel = cartViewModel
                 )
             }
 
@@ -205,14 +212,19 @@ fun MainApp() {
                         navController.navigate(Screen.Cart.route) {
                             popUpTo(Screen.Home.route)
                         }
-                    }
+                    },
+                    onProductClick = { productId ->
+                        navController.navigate(Screen.ProductDetail.createRoute(productId))
+                    },
+                    cartViewModel = cartViewModel
                 )
             }
 
             composable(Screen.Cart.route) {
                 CartScreen(
                     onBack = { navController.popBackStack() },
-                    onProceedToCheckout = { navController.navigate(Screen.Checkout.route) }
+                    onProceedToCheckout = { navController.navigate(Screen.Checkout.route) },
+                    cartViewModel = cartViewModel
                 )
             }
 
@@ -223,7 +235,8 @@ fun MainApp() {
                         navController.navigate(Screen.OrderTracking.createRoute(orderNumber)) {
                             popUpTo(Screen.Home.route)
                         }
-                    }
+                    },
+                    cartViewModel = cartViewModel
                 )
             }
 

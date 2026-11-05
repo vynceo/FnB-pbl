@@ -44,6 +44,13 @@ fun CheckoutScreen(
 
     val checkoutState by cartViewModel.checkoutState.collectAsState()
 
+    LaunchedEffect(Unit) {
+        val (savedName, savedPhone, savedEmail) = cartViewModel.getSavedUserDetails()
+        if (name.isBlank() && !savedName.isNullOrBlank()) name = savedName
+        if (phone.isBlank() && !savedPhone.isNullOrBlank()) phone = savedPhone
+        if (email.isBlank() && !savedEmail.isNullOrBlank()) email = savedEmail
+    }
+
     LaunchedEffect(checkoutState) {
         if (checkoutState is Resource.Success) {
             val order = (checkoutState as Resource.Success<Order>).data
@@ -51,6 +58,11 @@ fun CheckoutScreen(
             onOrderSuccess(order.orderNumber)
         }
     }
+
+    val deliveryFee = if (deliveryType == "express_delivery") 12000.0 else 0.0
+    val finalTotal = cartViewModel.total + deliveryFee
+    val isAddressValid = deliveryType != "express_delivery" || address.isNotBlank()
+    val isFormValid = name.isNotBlank() && phone.isNotBlank() && isAddressValid
 
     Scaffold(
         topBar = {
@@ -79,7 +91,7 @@ fun CheckoutScreen(
                         Column {
                             Text("Total Pembayaran", fontSize = 12.sp, color = TextSecondary)
                             Text(
-                                "Rp ${String.format("%,.0f", cartViewModel.total + if (deliveryType == "express_delivery") 12000.0 else 0.0)}",
+                                "Rp ${String.format("%,.0f", finalTotal)}",
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = AccentOrange
@@ -92,18 +104,16 @@ fun CheckoutScreen(
                                     token = null,
                                     outletId = outletId,
                                     deliveryType = deliveryType,
-                                    customerName = name.ifBlank { "Tamu" },
-                                    customerPhone = phone.ifBlank { "0000" },
-                                    customerEmail = email.ifBlank { null },
-                                    deliveryAddress = if (deliveryType != "dine_in") address.ifBlank { null } else null,
-                                    deliveryNotes = notes.ifBlank { null },
+                                    customerName = name.trim().ifBlank { "Pelanggan" },
+                                    customerPhone = phone.trim().ifBlank { "081200000000" },
+                                    customerEmail = email.trim().ifBlank { null },
+                                    deliveryAddress = if (deliveryType == "express_delivery") address.trim() else null,
+                                    deliveryNotes = notes.trim().ifBlank { null },
                                     paymentMethod = paymentMethod
                                 )
                             },
                             modifier = Modifier.height(48.dp),
-                            enabled = name.isNotBlank() && phone.isNotBlank() &&
-                                (deliveryType == "dine_in" || address.isNotBlank()) &&
-                                checkoutState !is Resource.Loading,
+                            enabled = isFormValid && checkoutState !is Resource.Loading,
                             colors = ButtonDefaults.buttonColors(containerColor = Amber),
                             shape = RoundedCornerShape(24.dp),
                             contentPadding = PaddingValues(horizontal = 24.dp)
@@ -170,10 +180,12 @@ fun CheckoutScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Alamat", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TextPrimary)
-                TextButton(onClick = { }) {
-                    Text("Ubah", fontSize = 13.sp, color = BurntAmber, fontWeight = FontWeight.SemiBold)
-                }
+                Text(
+                    if (deliveryType == "express_delivery") "Alamat Pengantaran" else "Lokasi / Metode Pengambilan",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = TextPrimary
+                )
             }
             if (deliveryType == "dine_in") {
                 Card(
@@ -183,13 +195,25 @@ fun CheckoutScreen(
                     Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Storefront, contentDescription = null, tint = BurntAmber, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Makan di outlet Dadar Beredar", fontSize = 14.sp, color = TextSecondary)
+                        Text("Makan di tempat (Dine In) di outlet Dadar Beredar", fontSize = 14.sp, color = TextSecondary)
+                    }
+                }
+            } else if (deliveryType == "takeaway") {
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceWhite)
+                ) {
+                    Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.ShoppingBag, contentDescription = null, tint = BurntAmber, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Ambil langsung di kasir outlet Dadar Beredar", fontSize = 14.sp, color = TextSecondary)
                     }
                 }
             } else {
                 OutlinedTextField(
                     value = address,
                     onValueChange = { address = it },
+                    label = { Text("Alamat Pengantaran *") },
                     placeholder = { Text("Jl. Contoh No. 123, Sidoarjo") },
                     modifier = Modifier.fillMaxWidth(),
                     leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = TextSecondary) },
@@ -313,7 +337,7 @@ fun CheckoutScreen(
                         CartPriceRow("Biaya Pengiriman", 12000.0)
                     }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = DividerColor)
-                    CartPriceRow("Total Pembayaran", cartViewModel.total, isBold = true)
+                    CartPriceRow("Total Pembayaran", finalTotal, isBold = true)
                 }
             }
 

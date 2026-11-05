@@ -6,6 +6,8 @@ import com.dadarberedar.app.data.model.Order
 import com.dadarberedar.app.data.remote.ApiService
 import com.dadarberedar.app.data.remote.AuthManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -59,16 +61,20 @@ class MyOrdersViewModel @Inject constructor(
                     }
                 }
 
-                historyStore.getNumbers().forEach { number ->
-                    if (!merged.containsKey(number)) {
-                        try {
-                            val res = apiService.getOrderTracking(number)
-                            val fetched = res.body()?.order
-                            if (res.isSuccessful && fetched != null) {
-                                merged[number] = fetched
+                val missingNumbers = historyStore.getNumbers().filter { !merged.containsKey(it) }
+                if (missingNumbers.isNotEmpty()) {
+                    val deferredList = missingNumbers.map { number ->
+                        async {
+                            try {
+                                val trackRes = apiService.getOrderTracking(number)
+                                if (trackRes.isSuccessful) trackRes.body()?.order else null
+                            } catch (_: Exception) {
+                                null
                             }
-                        } catch (_: Exception) {
                         }
+                    }
+                    deferredList.awaitAll().filterNotNull().forEach { order ->
+                        merged[order.orderNumber] = order
                     }
                 }
 

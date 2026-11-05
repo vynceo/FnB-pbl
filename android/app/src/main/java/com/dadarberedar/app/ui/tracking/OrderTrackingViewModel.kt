@@ -7,6 +7,7 @@ import com.dadarberedar.app.data.model.Order
 import com.dadarberedar.app.data.model.OrderUpdateRequest
 import com.dadarberedar.app.data.remote.ApiService
 import com.dadarberedar.app.data.remote.AuthManager
+import com.google.gson.JsonParser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -96,10 +97,10 @@ class OrderTrackingViewModel @Inject constructor(
                     _statusMessage.value = res.body()?.message ?: "Pesanan dibatalkan"
                     loadOrder(silent = true)
                 } else {
-                    _statusMessage.value = "Gagal membatalkan pesanan"
+                    _statusMessage.value = parseError(res.errorBody()?.string()) ?: "Gagal membatalkan pesanan"
                 }
             } catch (e: Exception) {
-                _statusMessage.value = "Gagal membatalkan pesanan"
+                _statusMessage.value = "Gagal membatalkan pesanan: ${e.localizedMessage}"
             } finally {
                 _isUpdating.value = false
             }
@@ -129,13 +130,31 @@ class OrderTrackingViewModel @Inject constructor(
                     _statusMessage.value = res.body()?.message ?: "Pesanan diperbarui"
                     loadOrder(silent = true)
                 } else {
-                    _statusMessage.value = "Gagal memperbarui pesanan"
+                    _statusMessage.value = parseError(res.errorBody()?.string()) ?: "Gagal memperbarui pesanan"
                 }
             } catch (e: Exception) {
-                _statusMessage.value = "Gagal memperbarui pesanan"
+                _statusMessage.value = "Gagal memperbarui pesanan: ${e.localizedMessage}"
             } finally {
                 _isUpdating.value = false
             }
+        }
+    }
+
+    private fun parseError(raw: String?): String? {
+        if (raw.isNullOrBlank()) return null
+        return try {
+            val json = JsonParser.parseString(raw).asJsonObject
+            if (json.has("errors")) {
+                val errors = json.getAsJsonObject("errors")
+                val firstEntry = errors.entrySet().firstOrNull()
+                val firstVal = firstEntry?.value
+                if (firstVal != null && firstVal.isJsonArray && firstVal.asJsonArray.size() > 0) {
+                    return firstVal.asJsonArray[0].asString
+                }
+            }
+            json.get("message")?.asString
+        } catch (_: Exception) {
+            null
         }
     }
 

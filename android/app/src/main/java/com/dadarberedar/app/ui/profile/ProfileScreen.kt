@@ -46,6 +46,9 @@ class ProfileViewModel @Inject constructor(
     private val _userEmail = MutableStateFlow("")
     val userEmail: StateFlow<String> = _userEmail.asStateFlow()
 
+    private val _userPhone = MutableStateFlow("")
+    val userPhone: StateFlow<String> = _userPhone.asStateFlow()
+
     init {
         loadProfile()
     }
@@ -56,6 +59,11 @@ class ProfileViewModel @Inject constructor(
             if (_isLoggedIn.value) {
                 _userName.value = authManager.getUserName() ?: "Pengguna"
                 _userEmail.value = authManager.getUserEmail() ?: ""
+                _userPhone.value = authManager.getUserPhone() ?: ""
+            } else {
+                _userName.value = ""
+                _userEmail.value = ""
+                _userPhone.value = ""
             }
         }
     }
@@ -66,6 +74,7 @@ class ProfileViewModel @Inject constructor(
             _isLoggedIn.value = false
             _userName.value = ""
             _userEmail.value = ""
+            _userPhone.value = ""
         }
     }
 }
@@ -81,7 +90,12 @@ fun ProfileScreen(
     val isLoggedIn by viewModel.isLoggedIn.collectAsState()
     val userName by viewModel.userName.collectAsState()
     val userEmail by viewModel.userEmail.collectAsState()
+    val userPhone by viewModel.userPhone.collectAsState()
     val clipboard = LocalClipboardManager.current
+
+    LaunchedEffect(Unit) {
+        viewModel.loadProfile()
+    }
 
     Scaffold(
         topBar = {
@@ -156,6 +170,19 @@ fun ProfileScreen(
                         }
                     }
                 }
+                if (isLoggedIn && userPhone.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Phone,
+                            contentDescription = null,
+                            tint = TextSecondary,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(userPhone, fontSize = 13.sp, color = TextSecondary)
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -202,6 +229,19 @@ fun ProfileScreen(
                         ) {
                             Text("Daftar Akun Baru", fontSize = 15.sp)
                         }
+                    }
+                }
+                if (isLoggedIn && userPhone.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Phone,
+                            contentDescription = null,
+                            tint = TextSecondary,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(userPhone, fontSize = 13.sp, color = TextSecondary)
                     }
                 }
             } else {
