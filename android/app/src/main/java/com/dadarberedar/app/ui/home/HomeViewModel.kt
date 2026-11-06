@@ -2,6 +2,11 @@ package com.dadarberedar.app.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dadarberedar.app.data.local.dao.CategoryDao
+import com.dadarberedar.app.data.local.dao.OutletDao
+import com.dadarberedar.app.data.local.dao.ProductDao
+import com.dadarberedar.app.data.local.entity.toEntity
+import com.dadarberedar.app.data.local.entity.toModel
 import com.dadarberedar.app.data.model.Category
 import com.dadarberedar.app.data.model.Outlet
 import com.dadarberedar.app.data.model.Product
@@ -17,7 +22,10 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val apiService: ApiService,
-    private val selectionBus: MenuSelectionBus
+    private val selectionBus: MenuSelectionBus,
+    private val outletDao: OutletDao,
+    private val categoryDao: CategoryDao,
+    private val productDao: ProductDao
 ) : ViewModel() {
 
     private val _outlets = MutableStateFlow<List<Outlet>>(emptyList())
@@ -50,28 +58,53 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
+
+            // 1. Load from local cache first (offline-first capability)
+            try {
+                val cachedOutlets = outletDao.getAllOutlets().map { it.toModel() }
+                val cachedCategories = categoryDao.getAllCategories().map { it.toModel() }
+                val cachedBestsellers = productDao.getBestsellerProducts().map { it.toModel() }
+                val cachedProducts = productDao.getAllProducts().map { it.toModel() }
+
+                if (cachedOutlets.isNotEmpty()) _outlets.value = cachedOutlets
+                if (cachedCategories.isNotEmpty()) _categories.value = cachedCategories
+                if (cachedBestsellers.isNotEmpty()) _bestsellers.value = cachedBestsellers
+                if (cachedProducts.isNotEmpty()) _products.value = cachedProducts
+            } catch (_: Exception) {}
+
+            // 2. Fetch fresh data from network and update cache
             try {
                 val outletRes = apiService.getOutlets()
                 if (outletRes.isSuccessful) {
-                    _outlets.value = outletRes.body()?.outlets ?: emptyList()
+                    val list = outletRes.body()?.outlets ?: emptyList()
+                    _outlets.value = list
+                    outletDao.insertOutlets(list.map { it.toEntity() })
                 }
 
                 val catRes = apiService.getCategories()
                 if (catRes.isSuccessful) {
-                    _categories.value = catRes.body()?.categories ?: emptyList()
+                    val list = catRes.body()?.categories ?: emptyList()
+                    _categories.value = list
+                    categoryDao.insertCategories(list.map { it.toEntity() })
                 }
 
                 val bestRes = apiService.getProducts(bestseller = true)
                 if (bestRes.isSuccessful) {
-                    _bestsellers.value = bestRes.body()?.products ?: emptyList()
+                    val list = bestRes.body()?.products ?: emptyList()
+                    _bestsellers.value = list
+                    productDao.insertProducts(list.map { it.toEntity() })
                 }
 
                 val prodRes = apiService.getProducts()
                 if (prodRes.isSuccessful) {
-                    _products.value = prodRes.body()?.products ?: emptyList()
+                    val list = prodRes.body()?.products ?: emptyList()
+                    _products.value = list
+                    productDao.insertProducts(list.map { it.toEntity() })
                 }
             } catch (e: Exception) {
-                _error.value = "Gagal memuat data: ${e.localizedMessage}"
+                if (_outlets.value.isEmpty() && _categories.value.isEmpty()) {
+                    _error.value = "Gagal memuat data: ${e.localizedMessage}"
+                }
             } finally {
                 _isLoading.value = false
             }
