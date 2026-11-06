@@ -1,5 +1,5 @@
 package com.dadarberedar.app
 
 object AppConfig {
-    const val BASE_URL = "http://10.0.2.2:8000/"
+    const val BASE_URL = "http://172.14.5.200:8000/"
 }
