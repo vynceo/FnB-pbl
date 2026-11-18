@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.dadarberedar.app.data.model.Order
 import com.dadarberedar.app.ui.theme.*
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,6 +35,8 @@ fun CheckoutScreen(
     var deliveryType by remember { mutableStateOf("takeaway") }
     var paymentMethod by remember { mutableStateOf("qris") }
     var paymentExpanded by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
 
     val paymentOptions = listOf(
         "qris" to "QRIS",
@@ -100,13 +103,12 @@ fun CheckoutScreen(
                         Button(
                             onClick = {
                                 val outletId = cartViewModel.selectedOutletId.value ?: 1L
-                                cartViewModel.checkout(
-                                    token = null,
+                                cartViewModel.checkoutViaWhatsApp(
+                                    context = context,
                                     outletId = outletId,
                                     deliveryType = deliveryType,
                                     customerName = name.trim().ifBlank { "Pelanggan" },
                                     customerPhone = phone.trim().ifBlank { "081200000000" },
-                                    customerEmail = email.trim().ifBlank { null },
                                     deliveryAddress = if (deliveryType == "express_delivery") address.trim() else null,
                                     deliveryNotes = notes.trim().ifBlank { null },
                                     paymentMethod = paymentMethod

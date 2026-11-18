@@ -1,5 +1,8 @@
 package com.dadarberedar.app.ui.cart
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -14,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.net.URLEncoder
 import javax.inject.Inject
 
 data class CartItem(
@@ -199,5 +203,121 @@ class CartViewModel @Inject constructor(
 
     fun resetCheckoutState() {
         _checkoutState.value = Resource.Idle
+    }
+
+    fun checkoutViaWhatsApp(
+        context: Context,
+        outletId: Long,
+        deliveryType: String,
+        customerName: String,
+        customerPhone: String,
+        deliveryAddress: String?,
+        deliveryNotes: String?,
+        paymentMethod: String
+    ) {
+        viewModelScope.launch {
+            _checkoutState.value = Resource.Loading
+            try {
+                val outletRes = apiService.getOutletDetail(outletId)
+                val outlet = if (outletRes.isSuccessful) outletRes.body()?.outlet else null
+                val rawWhatsApp = outlet?.whatsapp ?: outlet?.phone
+                if (rawWhatsApp.isNullOrBlank()) {
+                    _checkoutState.value = Resource.Error("Nomor WhatsApp outlet tidak tersedia.")
+                    return@launch
+                }
+                val normalizedPhone = normalizePhoneNumber(rawWhatsApp)
+                val outletName = outlet?.name ?: "Dadar Beredar Outlet"
+
+                val deliveryLabel = when (deliveryType) {
+                    "takeaway" -> "Takeaway"
+                    "dine_in" -> "Dine In"
+                    "express_delivery" -> "Express Delivery"
+                    else -> deliveryType
+                }
+
+                val deliveryFee = if (deliveryType == "express_delivery") 12000.0 else 0.0
+                val finalTotal = total + deliveryFee
+
+                val sb = StringBuilder()
+                sb.append("Halo, saya ingin melakukan pemesanan.\n\n")
+                sb.append("*DETAIL PESANAN*\n")
+                sb.append("Outlet: $outletName\n")
+                sb.append("Nama: $customerName\n")
+                sb.append("No. HP: $customerPhone\n")
+                sb.append("Jenis Pesanan: $deliveryLabel\n")
+                if (!deliveryAddress.isNullOrBlank() && deliveryType == "express_delivery") {
+                    sb.append("Alamat: $deliveryAddress\n")
+                }
+                sb.append("\n*DAFTAR MENU*\n")
+                _cartItems.forEachIndexed { index, item ->
+                    val itemTotal = item.product.price * item.quantity
+                    sb.append("${index + 1}. ${item.product.name} x${item.quantity}\n")
+                    sb.append("   Harga: Rp${String.format("%,.0f", item.product.price)}\n")
+                    sb.append("   Total: Rp${String.format("%,.0f", itemTotal)}\n")
+                    if (!item.notes.isNullOrBlank()) {
+                        sb.append("   Catatan: ${item.notes}\n")
+                    }
+                    sb.append("\n")
+                }
+
+                sb.append("Subtotal: Rp${String.format("%,.0f", subtotal)}\n")
+                sb.append("Pajak: Rp${String.format("%,.0f", tax)}\n")
+                if (deliveryFee > 0) {
+                    sb.append("Ongkir: Rp${String.format("%,.0f", deliveryFee)}\n")
+                }
+                sb.append("*TOTAL: Rp${String.format("%,.0f", finalTotal)}*\n\n")
+
+                if (!deliveryNotes.isNullOrBlank()) {
+                    sb.append("Catatan: $deliveryNotes\n\n")
+                }
+
+                sb.append("Mohon konfirmasi pesanan saya. Terima kasih.")
+
+                val message = sb.toString()
+                val encodedMessage = URLEncoder.encode(message, "UTF-8")
+                val uri = Uri.parse("https://wa.me/$normalizedPhone?text=$encodedMessage")
+
+                val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+
+                // NOTE: Per instructions, do NOT automatically clear the cart after WhatsApp is opened,
+                // and do NOT save order to database.
+
+                try {
+                    context.startActivity(intent)
+                    _checkoutState.value = Resource.Success(
+                        Order(
+                            id = 0,
+                            orderNumber = "WA-${System.currentTimeMillis()}",
+                            outletId = outletId,
+                            customerName = customerName,
+                            customerPhone = customerPhone,
+                            deliveryType = deliveryType,
+                            deliveryAddress = deliveryAddress,
+                            deliveryNotes = deliveryNotes,
+                            subtotal = subtotal,
+                            deliveryFee = deliveryFee,
+                            taxAmount = tax,
+                            totalAmount = finalTotal,
+                            outlet = outlet
+                        )
+                    )
+                } catch (e: Exception) {
+                    _checkoutState.value = Resource.Error("WhatsApp tidak terpasang di perangkat.")
+                }
+            } catch (e: Exception) {
+                _checkoutState.value = Resource.Error(e.localizedMessage ?: "Gagal menyusun pesan WhatsApp.")
+            }
+        }
+    }
+
+    private fun normalizePhoneNumber(phone: String): String {
+        val digits = phone.replace(Regex("[^0-9]"), "")
+        return when {
+            digits.startsWith("0") -> "62" + digits.substring(1)
+            digits.startsWith("62") -> digits
+            else -> "62$digits"
+        }
     }
 }
