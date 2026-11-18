@@ -21,7 +21,6 @@ sealed class BottomNavItem(
     object Home : BottomNavItem("home", "Beranda", Icons.Filled.Home, Icons.Outlined.Home)
     object Menu : BottomNavItem("menu", "Menu", Icons.Filled.Restaurant, Icons.Outlined.Restaurant)
     object Cart : BottomNavItem("cart", "Keranjang", Icons.Filled.ShoppingCart, Icons.Outlined.ShoppingCart)
-    object Orders : BottomNavItem("my_orders", "Riwayat", Icons.Filled.Receipt, Icons.Outlined.Receipt)
     object Profile : BottomNavItem("profile", "Profil", Icons.Filled.Person, Icons.Outlined.Person)
 }
 
@@ -35,7 +34,6 @@ fun BottomNavBar(
         BottomNavItem.Home,
         BottomNavItem.Menu,
         BottomNavItem.Cart,
-        BottomNavItem.Orders,
         BottomNavItem.Profile
     )
 

@@ -59,7 +59,6 @@ private val bottomNavRoutes = listOf(
     Screen.Home.route,
     Screen.Menu.route,
     Screen.Cart.route,
-    Screen.MyOrders.route,
     Screen.Profile.route
 )
 
@@ -284,9 +283,7 @@ fun MainApp() {
                 ProfileScreen(
                     onLoginClick = { navController.navigate(Screen.Login.route) },
                     onRegisterClick = { navController.navigate(Screen.Register.route) },
-                    onOrdersClick = {
-                        navController.navigate(Screen.MyOrders.route)
-                    }
+                    onOrdersClick = { navController.navigate(Screen.MyOrders.route) }
                 )
             }
         }

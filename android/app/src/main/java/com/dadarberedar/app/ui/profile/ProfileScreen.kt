@@ -13,7 +13,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
@@ -231,19 +230,6 @@ fun ProfileScreen(
                         }
                     }
                 }
-                if (isLoggedIn && userPhone.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Default.Phone,
-                            contentDescription = null,
-                            tint = TextSecondary,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(userPhone, fontSize = 13.sp, color = TextSecondary)
-                    }
-                }
             } else {
                 Card(
                     modifier = Modifier
@@ -257,7 +243,7 @@ fun ProfileScreen(
                         ProfileMenuItem(
                             icon = Icons.Default.ReceiptLong,
                             title = "Riwayat Pesanan",
-                            subtitle = "Lihat status & pesanan sebelumnya",
+                            subtitle = "Lihat status dan riwayat pesanan",
                             onClick = onOrdersClick
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = DividerColor)
