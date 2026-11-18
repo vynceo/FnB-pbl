@@ -12,21 +12,16 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.dadarberedar.app.ui.auth.LoginScreen
-import com.dadarberedar.app.ui.auth.RegisterScreen
 import com.dadarberedar.app.ui.cart.CartScreen
 import com.dadarberedar.app.ui.cart.CheckoutScreen
 import com.dadarberedar.app.ui.components.BottomNavBar
 import com.dadarberedar.app.ui.home.HomeScreen
 import com.dadarberedar.app.ui.menu.MenuScreen
-import com.dadarberedar.app.ui.orders.MyOrdersScreen
 import com.dadarberedar.app.ui.outlet.OutletDetailScreen
-import com.dadarberedar.app.ui.payment.PaymentScreen
 import com.dadarberedar.app.ui.product.ProductDetailScreen
 import com.dadarberedar.app.ui.profile.ProfileScreen
 import com.dadarberedar.app.ui.search.SearchScreen
 import com.dadarberedar.app.ui.splash.SplashScreen
-import com.dadarberedar.app.ui.tracking.OrderTrackingScreen
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.dadarberedar.app.ui.cart.CartViewModel
 
@@ -34,8 +29,6 @@ sealed class Screen(val route: String) {
     object Splash : Screen("splash")
     object Home : Screen("home")
     object Menu : Screen("menu")
-    object Login : Screen("login")
-    object Register : Screen("register")
     object Search : Screen("search")
     object ProductDetail : Screen("product/{productId}") {
         fun createRoute(productId: Long) = "product/$productId"
@@ -45,13 +38,6 @@ sealed class Screen(val route: String) {
     }
     object Cart : Screen("cart")
     object Checkout : Screen("checkout")
-    object MyOrders : Screen("my_orders")
-    object Payment : Screen("payment/{orderNumber}") {
-        fun createRoute(orderNumber: String) = "payment/$orderNumber"
-    }
-    object OrderTracking : Screen("tracking/{orderNumber}") {
-        fun createRoute(orderNumber: String) = "tracking/$orderNumber"
-    }
     object Profile : Screen("profile")
 }
 
@@ -167,27 +153,6 @@ fun MainApp() {
                 )
             }
 
-            composable(Screen.Login.route) {
-                LoginScreen(
-                    onBack = { navController.popBackStack() },
-                    onLoginSuccess = {
-                        navController.popBackStack()
-                    },
-                    onRegisterClick = {
-                        navController.navigate(Screen.Register.route)
-                    }
-                )
-            }
-
-            composable(Screen.Register.route) {
-                RegisterScreen(
-                    onBack = { navController.popBackStack() },
-                    onRegisterSuccess = {
-                        navController.popBackStack(Screen.Home.route, false)
-                    }
-                )
-            }
-
             composable(Screen.Search.route) {
                 SearchScreen(
                     onBack = { navController.popBackStack() },
@@ -230,61 +195,17 @@ fun MainApp() {
             composable(Screen.Checkout.route) {
                 CheckoutScreen(
                     onBack = { navController.popBackStack() },
-                    onOrderSuccess = { orderNumber ->
-                        navController.navigate(Screen.OrderTracking.createRoute(orderNumber)) {
-                            popUpTo(Screen.Home.route)
+                    onOrderSuccess = { _ ->
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Home.route) { inclusive = true }
                         }
                     },
                     cartViewModel = cartViewModel
                 )
             }
 
-            composable(Screen.MyOrders.route) {
-                MyOrdersScreen(
-                    onOrderClick = { orderNumber ->
-                        navController.navigate(Screen.OrderTracking.createRoute(orderNumber))
-                    },
-                    onPayClick = { orderNumber ->
-                        navController.navigate(Screen.Payment.createRoute(orderNumber))
-                    },
-                    onLoginClick = { navController.navigate(Screen.Login.route) }
-                )
-            }
-
-            composable(
-                route = Screen.Payment.route,
-                arguments = listOf(navArgument("orderNumber") { type = NavType.StringType })
-            ) {
-                PaymentScreen(
-                    onBack = { navController.popBackStack() },
-                    onPaid = { orderNumber ->
-                        navController.navigate(Screen.OrderTracking.createRoute(orderNumber)) {
-                            popUpTo(Screen.MyOrders.route)
-                        }
-                    },
-                    onTrack = { orderNumber ->
-                        navController.navigate(Screen.OrderTracking.createRoute(orderNumber)) {
-                            popUpTo(Screen.MyOrders.route)
-                        }
-                    }
-                )
-            }
-
-            composable(
-                route = Screen.OrderTracking.route,
-                arguments = listOf(navArgument("orderNumber") { type = NavType.StringType })
-            ) {
-                OrderTrackingScreen(
-                    onBack = { navController.popBackStack() }
-                )
-            }
-
             composable(Screen.Profile.route) {
-                ProfileScreen(
-                    onLoginClick = { navController.navigate(Screen.Login.route) },
-                    onRegisterClick = { navController.navigate(Screen.Register.route) },
-                    onOrdersClick = { navController.navigate(Screen.MyOrders.route) }
-                )
+                ProfileScreen()
             }
         }
     }
