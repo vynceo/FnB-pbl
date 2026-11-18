@@ -211,6 +211,9 @@ class CartViewModel @Inject constructor(
         deliveryType: String,
         customerName: String,
         customerPhone: String,
+        day: String,
+        date: String,
+        time: String,
         deliveryAddress: String?,
         deliveryNotes: String?,
         paymentMethod: String
@@ -228,14 +231,7 @@ class CartViewModel @Inject constructor(
                 val normalizedPhone = normalizePhoneNumber(rawWhatsApp)
                 val outletName = outlet?.name ?: "Dadar Beredar Outlet"
 
-                val deliveryLabel = when (deliveryType) {
-                    "takeaway" -> "Takeaway"
-                    "dine_in" -> "Dine In"
-                    "express_delivery" -> "Express Delivery"
-                    else -> deliveryType
-                }
-
-                val deliveryFee = if (deliveryType == "express_delivery") 12000.0 else 0.0
+                val deliveryFee = 5000.0
                 val finalTotal = total + deliveryFee
 
                 val sb = StringBuilder()
@@ -244,11 +240,18 @@ class CartViewModel @Inject constructor(
                 sb.append("Outlet: $outletName\n")
                 sb.append("Nama: $customerName\n")
                 sb.append("No. HP: $customerPhone\n")
-                sb.append("Jenis Pesanan: $deliveryLabel\n")
-                if (!deliveryAddress.isNullOrBlank() && deliveryType == "express_delivery") {
-                    sb.append("Alamat: $deliveryAddress\n")
+                if (day.isNotBlank() || date.isNotBlank()) {
+                    sb.append("Hari/Tanggal: ${day.ifBlank { "-" }}, ${date.ifBlank { "-" }}\n")
                 }
-                sb.append("\n*DAFTAR MENU*\n")
+                if (time.isNotBlank()) {
+                    sb.append("Jam: $time\n")
+                }
+                if (!deliveryAddress.isNullOrBlank()) {
+                    sb.append("Alamat Pengiriman: $deliveryAddress\n")
+                }
+                sb.append("Metode Pembayaran: $paymentMethod\n\n")
+
+                sb.append("*DAFTAR MENU*\n")
                 _cartItems.forEachIndexed { index, item ->
                     val itemTotal = item.product.price * item.quantity
                     sb.append("${index + 1}. ${item.product.name} x${item.quantity}\n")
@@ -261,10 +264,7 @@ class CartViewModel @Inject constructor(
                 }
 
                 sb.append("Subtotal: Rp${String.format("%,.0f", subtotal)}\n")
-                sb.append("Pajak: Rp${String.format("%,.0f", tax)}\n")
-                if (deliveryFee > 0) {
-                    sb.append("Ongkir: Rp${String.format("%,.0f", deliveryFee)}\n")
-                }
+                sb.append("Ongkir: Rp${String.format("%,.0f", deliveryFee)}\n")
                 sb.append("*TOTAL: Rp${String.format("%,.0f", finalTotal)}*\n\n")
 
                 if (!deliveryNotes.isNullOrBlank()) {
@@ -280,9 +280,6 @@ class CartViewModel @Inject constructor(
                 val intent = Intent(Intent.ACTION_VIEW, uri).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
-
-                // NOTE: Per instructions, do NOT automatically clear the cart after WhatsApp is opened,
-                // and do NOT save order to database.
 
                 try {
                     context.startActivity(intent)
